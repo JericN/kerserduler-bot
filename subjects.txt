@@ -1,0 +1,17 @@
+math
+phys
+cs11
+cs12
+cs20
+cs21
+cs30
+cs32
+cs138
+cs140
+cs150
+cs165
+cs191
+cs136
+cs133
+cs198
+cs172
