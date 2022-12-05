@@ -9,8 +9,14 @@ module.exports = {
     code: "reqs",
 
     async execute(client, message) {
+        let startDate = new Date()
+        let endDate = new Date(new Date().setDate(startDate.getDate() + 7))
 
-        const subjects = fs.readFileSync('./subjects.txt', 'utf-8').split('\n')
+        // Load script template
+        const script = fs.readFileSync('./data/script.txt', 'utf-8')
+
+        // Get respective channel for each subject
+        const subjects = fs.readFileSync('./data/subjects.txt', 'utf-8').split('\n')
         var acadChannels = new Map()
         message.guild.channels.cache.forEach((channel) => {
             for (subject of subjects) {
@@ -21,7 +27,7 @@ module.exports = {
             }
         })
 
-
+        // Initialize Google Calendar and Cloud Service
         const calendar = google.calendar({ version: "v3" })
         const auth = new google.auth.JWT(
             CREDENTIALS.client_email,
@@ -30,6 +36,9 @@ module.exports = {
             ["https://www.googleapis.com/auth/calendar"]
         )
 
+
+
+        // Get list of events from google calendar
         const getEvents = async (startDate, endDate) => {
             try {
                 let response = await calendar.events.list({
@@ -40,53 +49,53 @@ module.exports = {
                     timeZone: 'Asia/Singapore'
                 })
 
-                let items = response['data']['items']
-                return items
+                sendEvents(response['data']['items'])
             } catch (error) {
                 console.log(`Error at getEvents --> ${error}`)
                 return 0
             }
         }
 
-
-
-
-        const send = async (items) => {
-            for (item of items) {
-                for (channel of acadChannels) {
-
-                    var a = channel[0].substring(2)
-                    var b = item.summary.split(' ')[1]
-
-                    if (a == b) {
-                        var topic = item['summary']
-                        var dateObj = new Date(item['start']['date']).toLocaleString('default', { month: 'long', day: 'numeric' })
-                        console.log(topic + ' on ' + dateObj)
-                        await client.channels.fetch(channel[1].id).then((channel) => {
-                            channel.send(topic + ' on ' + dateObj)
-                        })
-
+        // Send Events to their respective channels
+        const sendEvents = async (items) => {
+            var events = new Object
+            for (let i = 0; i < items.length; i++) {
+                if (items[i] == null) continue
+                var subj = items[i].summary.split(' ')[1]
+                events[subj] = [items[i]]
+                for (let j = i + 1; j < items.length; j++) {
+                    if (items[j] == null) continue
+                    var xSubj = items[j].summary.split(' ')[1]
+                    if (subj == xSubj) {
+                        events[subj].push(items[j])
+                        items[j] = null
                     }
                 }
+            }
 
+            for (var subject in events) {
+                var strLine = ''
+                for (var reqs of events[subject]) {
+                    var topic = reqs['summary']
+                    var dateObj = new Date(reqs['start']['date']).toLocaleString('default', { month: 'long', day: 'numeric' })
+                    strLine = strLine.concat('📍 **' + dateObj + '**  ' + topic + '\n')
+                }
+
+                for (channel of acadChannels) {
+                    if (subject == channel[0].substring(2)) {
+                        await client.channels.fetch(channel[1].id).then((channel) => {
+                            var msg = script.replace('[<start>]', startDate.toLocaleString('default', { month: 'long', day: 'numeric' }))
+                                .replace('[<end>]', endDate.toLocaleString('default', { month: 'long', day: 'numeric' }))
+                                .replaceAll('[<subject>]', subject)
+                                .replace('[<requirements>]', strLine)
+                            channel.send(msg)
+                        })
+                        break
+                    }
+                }
             }
         }
 
-
-
-
-
-        let startDate = new Date()
-        let endDate = new Date(new Date().setDate(startDate.getDate() + 7))
-
         getEvents(startDate, endDate)
-            .then((res) => {
-                console.log('success')
-                send(res)
-            })
-            .catch((err) => {
-                console.log(err)
-            })
-
     }
 }
