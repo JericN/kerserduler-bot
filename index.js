@@ -1,18 +1,51 @@
-const { Client, GatewayIntentBits } = require('discord.js')
+const { Client, Events, GatewayIntentBits } = require('discord.js')
 require('dotenv/config')
 
 const client = new Client({
-	intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
+	intents: [
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.MessageContent,
+		GatewayIntentBits.GuildMessageReactions
+	],
+	partials: [
+		'MESSAGE',
+		'CHANNEL',
+		'REACTION'
+	],
 })
 
-client.on('ready', () => {
-	console.log('The bot is ready')
+// initialize command path
+require('./functions/set_commands.js')(client)
+
+client.once(Events.ClientReady, c => {
+	console.log(`Ready! Logged in as ${c.user.tag}`)
+	client.channels.cache.get('1047046558702653440').send("I'm ready!")
 })
+
 
 client.on('messageCreate', (message) => {
-	if (message.content === 'sino pretty?') {
-		message.reply('si bea po')
-	}
+	const prefix = '-'
+	if (!message.content.startsWith(prefix) || message.author.bot) return
+	const msg = message.content.slice(prefix.length).split(/ +/)
+	const cmd = msg.shift().toLowerCase()
+	const args = msg.toString()
+	const command = client.commands.get(cmd)
+	const channel = message.channel
+	if (command) command.execute(client, message)
+})
+
+
+client.on('messageReactionAdd', (reaction, user) => {
+	console.log("hello")
+	reaction.message.channel.send("reacted")
 })
 
 client.login(process.env.TOKEN)
+
+
+
+
+
+
+
