@@ -1,110 +1,162 @@
 const { google } = require('googleapis')
 const fs = require('fs')
-const { channel } = require('diagnostics_channel')
 require('dotenv/config')
 
-const CREDENTIALS = JSON.parse(process.env.GOOGLE_CREDENTIALS)
-const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID
 
+// Format date to <month> <day>
 function dateFormat(date) {
     return date.toLocaleString('default', { month: 'long', day: 'numeric' })
 }
 
+// Get respective channel for each subject
+const getChannels = (guild) => {
+    const subjects = fs.readFileSync('./data/subjects.txt', 'utf-8').split('\n')
+    let acadChannels = new Object()
+    guild.channels.cache.forEach((channel) => {
+        if (subjects.includes(channel.name.replaceAll('-', ''))) {
+            acadChannels[channel.name.replaceAll('-', '')] = channel
+        }
+    })
+    return acadChannels
+}
+
+// Initialize Google Calendar and Cloud Service
+const enableGCP = () => {
+    const calendar = google.calendar({ version: "v3" })
+    const auth = new google.auth.JWT(
+        process.env.GCP_CLIENT_EMAIL,
+        null,
+        process.env.GCP_PRIVATE_KEY,
+        ["https://www.googleapis.com/auth/calendar"]
+    )
+    return { calendar, auth }
+}
+
+// Get list of events from google calendar
+const getEvents = async (calendar, auth, startDate, endDate) => {
+    try {
+        let response = await calendar.events.list({
+            auth: auth,
+            calendarId: process.env.GOOGLE_CALENDAR_CURSOR_ID,
+            timeMin: startDate,
+            timeMax: endDate,
+            timeZone: 'Asia/Singapore'
+        })
+
+        return response['data']['items']
+    } catch (error) {
+        return 0
+    }
+}
+
+// Organize events, collect similar subjects
+const categorizeEvents = (message, args, calEvents) => {
+    const subNames = ['math', 'physics', 'cs']
+    let newEvents = new Object
+    for (let i = 0; i < calEvents.length; i++) {
+        let [name, num] = calEvents[i].summary.split(' ')
+        name = name.toLowerCase()
+
+        if (!subNames.includes(name)) {
+            console.log('[WARNING] Event <' + calEvents[i].summary + '> from calendar is not recognized!')
+            if (!args) message.channel.send(':scream: **[WARNING]** Calendar Event :point_right_tone1: **' + calEvents[i].summary.toUpperCase() + '** :point_left_tone1: is **not** recognized :knife:')
+            continue
+        }
+
+        const subj = name + num
+        if (newEvents[subj]) {
+            newEvents[subj].push(calEvents[i])
+        } else {
+            newEvents[subj] = [calEvents[i]]
+        }
+    }
+    return newEvents
+}
+
+// Send Events to their respective channels
+const sendEvents = async (client, newEvents, acadChannels, startDate, endDate, message, args) => {
+    const script = fs.readFileSync('./data/script.txt', 'utf-8')
+    let log = new String().concat('#step\n')
+
+    for (let subject in newEvents) {
+        if (args && !args.includes(subject)) continue
+
+        const currChannel = acadChannels[subject]
+        if (!currChannel) {
+            console.log('[WARNING]** No <' + subject + '> channel found!')
+            message.channel.send(':scream: **[WARNING]** Channel for :point_right_tone1: **' + subject.toLocaleUpperCase() + '** :point_left_tone1: is **not** recognized :knife:')
+            continue
+        }
+        await client.channels.fetch(currChannel.id).then(async (channel) => {
+            let strLine = new String()
+            newEvents[subject].forEach((reqs) => {
+                strLine = strLine.concat('📍 **' + dateFormat(new Date(reqs['start']['date'])) + '**  ' + reqs['summary'] + '\n')
+            })
+            const msg = script
+                .replace('[<start>]', dateFormat(startDate))
+                .replace('[<end>]', dateFormat(endDate))
+                .replaceAll('[<subject>]', subject)
+                .replace('[<requirements>]', strLine)
+            await channel.send(msg)
+            console.log('[LOGS] Message is sent to <' + subject + '>')
+            log = log
+                .concat(subject + ' ')
+                .concat(channel.id + ' ')
+                .concat(channel.lastMessageId + '\n')
+        })
+    }
+    fs.appendFileSync('./data/recent_message.txt', log)
+    message.channel.send(':partying_face: **[SUCCESS]** Update sent! :books:')
+}
+
+
+// Argument checking
+
+const checkArgs = (message, args) => {
+    const subjects = fs.readFileSync('./data/subjects.txt', 'utf-8').split('\n')
+    for (subj of args) {
+        if (!subjects.includes(subj)) {
+            return -1
+        }
+    }
+    return args
+}
+
+
 module.exports = {
     name: "Send Requirements",
     code: "reqs",
+    desc: "",
 
-    async execute(client, message) {
+    async execute(client, guild, message, args) {
         let startDate = new Date()
         let endDate = new Date(new Date().setDate(startDate.getDate() + 7))
 
-        // Load script template
-        const script = fs.readFileSync('./data/script.txt', 'utf-8')
+        args = args ? checkArgs(message, args.split(',')) : args
+        if (args == -1) {
+            console.log('[ERROR] Invalid subject <' + subj + '>')
+            message.channel.send(':face_with_symbols_over_mouth: **[ERROR]**  Invalid subject :point_right_tone1: **' + subj.toUpperCase() + '**:point_left_tone1:')
+            return
+        }
 
-        // Get respective channel for each subject
-        const subjects = fs.readFileSync('./data/subjects.txt', 'utf-8').split('\n')
-        var acadChannels = new Map()
-        message.guild.channels.cache.forEach((channel) => {
-            for (subject of subjects) {
-                if (channel.name.includes(subject)) {
-                    acadChannels.set(channel.name, channel)
-                    break
-                }
-            }
-        })
+        // Get list of subject channel
+        let acadChannels = getChannels(guild)
 
-        // Initialize Google Calendar and Cloud Service
-        const calendar = google.calendar({ version: "v3" })
-        const auth = new google.auth.JWT(
-            CREDENTIALS.client_email,
-            null,
-            CREDENTIALS.private_key,
-            ["https://www.googleapis.com/auth/calendar"]
-        )
-
-
+        // Authenticate Google Cloud Platform
+        let { calendar, auth } = enableGCP()
 
         // Get list of events from google calendar
-        const getEvents = async (startDate, endDate) => {
-            try {
-                let response = await calendar.events.list({
-                    auth: auth,
-                    calendarId: CALENDAR_ID,
-                    timeMin: startDate,
-                    timeMax: endDate,
-                    timeZone: 'Asia/Singapore'
-                })
-
-                sendEvents(response['data']['items'])
-            } catch (error) {
-                console.log(`Error at getEvents --> ${error}`)
-                return 0
-            }
+        let calEvents = await getEvents(calendar, auth, startDate, endDate)
+        if (!calEvents) {
+            console.log('[ERROR] Unsuccessful Google Calendar Authentication')
+            message.channel.send(':face_with_symbols_over_mouth: **[ERROR]**  Unsuccessful Google Calendar Authentication')
+            return
         }
 
-        // Send Events to their respective channels
-        const sendEvents = async (items) => {
+        // Organize events, collect similar subjects
+        let newEvents = categorizeEvents(message, args, calEvents)
 
-            // Collect events of identical subjects
-            var events = new Object
-            for (let i = 0; i < items.length; i++) {
-                if (items[i] == null) continue
-                var subj = items[i].summary.split(' ')[1]
-                events[subj] = [items[i]]
-                for (let j = i + 1; j < items.length; j++) {
-                    if (items[j] == null) continue
-                    var xSubj = items[j].summary.split(' ')[1]
-                    if (subj == xSubj) {
-                        events[subj].push(items[j])
-                        items[j] = null
-                    }
-                }
-            }
-
-            // Find the correct channel for each subject and send the message
-            for (var subject in events) {
-                var strLine = ''
-                for (var reqs of events[subject]) {
-                    var topic = reqs['summary']
-                    var dateObj = dateFormat(new Date(reqs['start']['date']))
-                    strLine = strLine.concat('📍 **' + dateObj + '**  ' + topic + '\n')
-                }
-
-                for (var channel of acadChannels) {
-                    if (subject == channel[0].substring(2)) {
-                        await client.channels.fetch(channel[1].id).then(async (channel) => {
-                            var msg = script.replace('[<start>]', dateFormat(startDate))
-                                .replace('[<end>]', dateFormat(endDate))
-                                .replaceAll('[<subject>]', subject)
-                                .replace('[<requirements>]', strLine)
-                            await channel.send(msg)
-                            fs.appendFileSync('./data/recent_message.txt', channel.id + ' ' + channel.lastMessageId + '\n')
-                        }); break
-                    }
-                }
-            }
-        }
-
-        getEvents(startDate, endDate)
+        // Find the correct channel for each subject and send the message
+        sendEvents(client, newEvents, acadChannels, startDate, endDate, message, args)
     }
 }

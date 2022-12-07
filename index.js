@@ -37,6 +37,7 @@ for (const file of commandFiles) {
 // EVENT: Bot is online
 client.once(Events.ClientReady, c => {
 	console.log(`Ready! Logged in as ${c.user.tag}`)
+
 })
 
 // EVENT: Message is detected
@@ -45,7 +46,7 @@ client.on('messageCreate', (message) => {
 	const msg = message.content.slice(PREFIX.length).split(/ +/)
 	const command = client.commands.get(msg.shift().toLowerCase())
 	const args = msg.toString()
-	if (command) command.execute(client, message)
+	if (command) command.execute(client, message.guild, message, args)
 })
 
 
