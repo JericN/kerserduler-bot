@@ -1,8 +1,14 @@
 const { google } = require('googleapis')
 const fs = require('fs')
+const { channel } = require('diagnostics_channel')
 require('dotenv/config')
+
 const CREDENTIALS = JSON.parse(process.env.GOOGLE_CREDENTIALS)
 const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID
+
+function dateFormat(date) {
+    return date.toLocaleString('default', { month: 'long', day: 'numeric' })
+}
 
 module.exports = {
     name: "Send Requirements",
@@ -58,6 +64,8 @@ module.exports = {
 
         // Send Events to their respective channels
         const sendEvents = async (items) => {
+
+            // Collect events of identical subjects
             var events = new Object
             for (let i = 0; i < items.length; i++) {
                 if (items[i] == null) continue
@@ -73,24 +81,25 @@ module.exports = {
                 }
             }
 
+            // Find the correct channel for each subject and send the message
             for (var subject in events) {
                 var strLine = ''
                 for (var reqs of events[subject]) {
                     var topic = reqs['summary']
-                    var dateObj = new Date(reqs['start']['date']).toLocaleString('default', { month: 'long', day: 'numeric' })
+                    var dateObj = dateFormat(new Date(reqs['start']['date']))
                     strLine = strLine.concat('📍 **' + dateObj + '**  ' + topic + '\n')
                 }
 
-                for (channel of acadChannels) {
+                for (var channel of acadChannels) {
                     if (subject == channel[0].substring(2)) {
-                        await client.channels.fetch(channel[1].id).then((channel) => {
-                            var msg = script.replace('[<start>]', startDate.toLocaleString('default', { month: 'long', day: 'numeric' }))
-                                .replace('[<end>]', endDate.toLocaleString('default', { month: 'long', day: 'numeric' }))
+                        await client.channels.fetch(channel[1].id).then(async (channel) => {
+                            var msg = script.replace('[<start>]', dateFormat(startDate))
+                                .replace('[<end>]', dateFormat(endDate))
                                 .replaceAll('[<subject>]', subject)
                                 .replace('[<requirements>]', strLine)
-                            channel.send(msg)
-                        })
-                        break
+                            await channel.send(msg)
+                            fs.appendFileSync('./data/recent_message.txt', channel.id + ' ' + channel.lastMessageId + '\n')
+                        }); break
                     }
                 }
             }
