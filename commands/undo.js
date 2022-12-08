@@ -9,9 +9,10 @@ const deleteMessage = async (client, message, msgData, counter) => {
     msgData = msgData.split(' ')
     const channel = client.channels.cache.get(msgData[1])
     try {
-        const message = await channel.messages.fetch(msgData[2])
-        await message.delete()
-        console.log('[LOGS] Message in <' + msgData[0] + '> is deleted')
+        const subjMessage = await channel.messages.fetch(msgData[2])
+        await subjMessage.delete()
+        console.log('[LOGS] Message in <' + msgData[0] + '> channel is deleted')
+        message.channel.send('```\n[LOGS] Message in ' + msgData[0] + ' channel is deleted\n```')
         counter = counter + 1
     } catch (error) {
         console.log('[WARNING] Message in <' + msgData[0] + '> no longer exist')
@@ -30,6 +31,7 @@ module.exports = {
         if (index == -1) {
             console.log('[WARNING] Recent logs are empty')
             message.channel.send('```css\n[WARNING] Recent logs are empty\n```')
+            message.react('❎')
             return
         }
 
@@ -43,5 +45,6 @@ module.exports = {
         fs.writeFileSync('./data/recent_message.txt', hist)
 
         message.channel.send('```css\n#Success ' + counter + ' message deleted\n```')
+        message.react('✅')
     }
 }

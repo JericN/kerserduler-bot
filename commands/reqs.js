@@ -70,7 +70,7 @@ const getChannels = (guild) => {
 // Send Events to their respective channels
 const sendEvents = async (client, message, startDate, endDate, targetSubjects, acadChannels, validEvents) => {
     const script = fs.readFileSync('./data/script.txt', 'utf-8')
-    let log = new String().concat('#step\n')
+    let logs = new String().concat('#step\n')
     let counter = 0
 
     for (let subject in validEvents) {
@@ -102,25 +102,28 @@ const sendEvents = async (client, message, startDate, endDate, targetSubjects, a
 
         // Send message to its corresponding channel
         await currChannel.send(msg)
-        console.log('[LOGS] Message is sent to <' + subject + '> channel')
-        message.channel.send('```diff\n![LOGS] Message is sent to ' + subject + ' channel\n```')
-        counter = counter + 1
     }
 
+    // Pause execution, give time for discord to load new message
     await new Promise(resolve => setTimeout(resolve, 2000))
 
+    // Save new messages to the logs file
     for (subject in validEvents) {
+        console.log('[LOGS] Message is sent to <' + subject + '> channel')
+        message.channel.send('```\n[LOGS] Message is sent to ' + subject + ' channel\n```')
+        counter = counter + 1
+
         channel = await client.channels.fetch(acadChannels[subject].id)
-        log = log
+        logs = logs
             .concat(subject + ' ')
             .concat(channel.id + ' ')
             .concat(channel.lastMessageId + '\n')
     }
 
     if (counter != 0) {
-        fs.appendFileSync('./data/recent_message.txt', log)
+        fs.appendFileSync('./data/recent_message.txt', logs)
     }
-    message.channel.send('```css\n#Success Update sent in ' + counter + ' channel(s)\n```')
+    await message.channel.send('```css\n#Success Update sent in ' + counter + ' channel(s)\n```')
 }
 
 
@@ -139,10 +142,11 @@ module.exports = {
         try {
             var { targetSubjects, startDate, endDate } = parseArguments(args)
             console.log('Searching date: ' + dateFormat(startDate) + ' to ' + dateFormat(endDate))
-            await message.channel.send('```diff\n! Searching Date: ' + dateFormat(startDate) + ' to ' + dateFormat(endDate) + '\n```')
+            await message.channel.send('```diff\n!Searching Span: ' + dateFormat(startDate) + ' to ' + dateFormat(endDate) + '\n```')
         } catch (invalidInputs) {
             console.log('[ERROR] Invalid input subject: ' + invalidInputs)
             await message.channel.send('```css\n[ERROR] Invalid subject: ' + invalidInputs + '\n```')
+            await message.react('❎')
             return
         }
 
@@ -155,10 +159,12 @@ module.exports = {
         } catch (error) {
             console.log(error)
             console.log('[ERROR] Unsuccessful Google Calendar Authentication')
-            message.channel.send('```css\n[ERROR] Unsuccessful Google Calendar Authentication\n```')
+            await message.channel.send('```css\n[ERROR] Unsuccessful Google Calendar Authentication\n```')
+            await message.react('❎')
             return
         }
 
+        // Dont show warning logs if on selective search
         if (targetSubjects.length == 0) {
             for (req of invalidEvents) {
                 console.log('[WARNING] Calendar Event <' + req + '> is not recognized')
@@ -167,6 +173,7 @@ module.exports = {
         }
         // Find the correct channel for each subject and send the message
         await sendEvents(client, message, startDate, endDate, targetSubjects, acadChannels, validEvents)
-        console.log('>>>>>>>>>>>>>>>>>> DONE <<<<<<<<<<<<<<<<<<<')
+        message.react('✅')
+        console.log('>>>>>>>>>>>>>>>>>> DONE <<<<<<<<<<<<<<<<<<<\n\n')
     }
 }
