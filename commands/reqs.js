@@ -1,5 +1,6 @@
 const { google } = require('googleapis')
 const fs = require('fs')
+const { rejects } = require('assert')
 require('dotenv/config')
 
 
@@ -8,20 +9,30 @@ function dateFormat(date) {
     return date.toLocaleString('default', { month: 'long', day: 'numeric' })
 }
 
+function getFirstDayOfWeek() {
+    const date = new Date()
+    const day = date.getDay()
+    const diff = date.getDate() - day
+
+    return new Date(date.setDate(diff))
+}
+
 // Get respective channel for each subject
 const getChannels = (guild) => {
     const subjects = fs.readFileSync('./data/subjects.txt', 'utf-8').split('\n')
     let acadChannels = new Object()
     guild.channels.cache.forEach((channel) => {
-        if (subjects.includes(channel.name.replaceAll('-', ''))) {
-            acadChannels[channel.name.replaceAll('-', '')] = channel
+        const name = channel.name.replaceAll(/[\s_-]/g, '')
+        if (subjects.includes(name)) {
+            acadChannels[name] = channel
         }
     })
     return acadChannels
 }
 
-// Initialize Google Calendar and Cloud Service
-const enableGCP = () => {
+
+// Get list of events from google calendar
+const getEvents = async (startDate, endDate) => {
     const calendar = google.calendar({ version: "v3" })
     const auth = new google.auth.JWT(
         process.env.GCP_CLIENT_EMAIL,
@@ -29,97 +40,107 @@ const enableGCP = () => {
         process.env.GCP_PRIVATE_KEY,
         ["https://www.googleapis.com/auth/calendar"]
     )
-    return { calendar, auth }
-}
-
-// Get list of events from google calendar
-const getEvents = async (calendar, auth, startDate, endDate) => {
-    try {
-        let response = await calendar.events.list({
-            auth: auth,
-            calendarId: process.env.GOOGLE_CALENDAR_CURSOR_ID,
-            timeMin: startDate,
-            timeMax: endDate,
-            timeZone: 'Asia/Singapore'
-        })
-
-        return response['data']['items']
-    } catch (error) {
-        return 0
-    }
+    const response = await calendar.events.list({
+        auth: auth,
+        calendarId: process.env.GOOGLE_CALENDAR_CURSOR_ID,
+        timeMin: startDate,
+        timeMax: endDate,
+        timeZone: 'Asia/Singapore'
+    })
+    return response['data']['items']
 }
 
 // Organize events, collect similar subjects
-const categorizeEvents = (message, args, calEvents) => {
-    const subNames = ['math', 'physics', 'cs']
+const categorizeEvents = (message, args, startDate, calEvents) => {
+    const subjNames = ['math', 'physics', 'cs']
     let newEvents = new Object
-    for (let i = 0; i < calEvents.length; i++) {
-        let [name, num] = calEvents[i].summary.split(' ')
+    for (req of calEvents) {
+        const a = new Date(req['start']['date']).getTime()
+        const b = new Date(startDate).getTime()
+        if (a < b) continue
+
+        let [name, num] = req.summary.split(' ')
         name = name.toLowerCase()
 
-        if (!subNames.includes(name)) {
-            console.log('[WARNING] Event <' + calEvents[i].summary + '> from calendar is not recognized!')
-            if (!args) message.channel.send(':scream: **[WARNING]** Calendar Event :point_right_tone1: **' + calEvents[i].summary.toUpperCase() + '** :point_left_tone1: is **not** recognized :knife:')
+        if (!subjNames.includes(name)) {
+            console.log('[WARNING] Calendar Event <' + req.summary + '> is not recognized')
+            if (!args) message.channel.send('```css\n[WARNING] Calendar Event ' + req.summary + ' is not recognized\n```')
             continue
         }
 
         const subj = name + num
         if (newEvents[subj]) {
-            newEvents[subj].push(calEvents[i])
+            newEvents[subj].push(req)
         } else {
-            newEvents[subj] = [calEvents[i]]
+            newEvents[subj] = [req]
         }
     }
+
     return newEvents
 }
 
 // Send Events to their respective channels
-const sendEvents = async (client, newEvents, acadChannels, startDate, endDate, message, args) => {
+const sendEvents = async (client, message, startDate, endDate, targetSubjects, acadChannels, newEvents) => {
     const script = fs.readFileSync('./data/script.txt', 'utf-8')
     let log = new String().concat('#step\n')
-
+    let counter = 0
     for (let subject in newEvents) {
-        if (args && !args.includes(subject)) continue
+        if (targetSubjects != 0 && !targetSubjects.includes(subject)) continue
 
         const currChannel = acadChannels[subject]
         if (!currChannel) {
-            console.log('[WARNING]** No <' + subject + '> channel found!')
-            message.channel.send(':scream: **[WARNING]** Channel for :point_right_tone1: **' + subject.toLocaleUpperCase() + '** :point_left_tone1: is **not** recognized :knife:')
+            console.log('[WARNING] No <' + subject + '> channel found!')
+            message.channel.send('```css\n[WARNING] Channel for ' + subject + ' is not recognized\n```')
             continue
         }
-        await client.channels.fetch(currChannel.id).then(async (channel) => {
-            let strLine = new String()
-            newEvents[subject].forEach((reqs) => {
-                strLine = strLine.concat('📍 **' + dateFormat(new Date(reqs['start']['date'])) + '**  ' + reqs['summary'] + '\n')
-            })
-            const msg = script
-                .replace('[<start>]', dateFormat(startDate))
-                .replace('[<end>]', dateFormat(endDate))
-                .replaceAll('[<subject>]', subject)
-                .replace('[<requirements>]', strLine)
-            await channel.send(msg)
-            console.log('[LOGS] Message is sent to <' + subject + '>')
-            log = log
-                .concat(subject + ' ')
-                .concat(channel.id + ' ')
-                .concat(channel.lastMessageId + '\n')
+
+        let channel = await client.channels.fetch(currChannel.id)
+
+        let strLine = new String()
+        newEvents[subject].forEach((reqs) => {
+            strLine = strLine.concat('📍 **' + dateFormat(new Date(reqs['start']['date'])) + '**  ' + reqs['summary'] + '\n')
         })
+
+        const msg = script
+            .replace('[<start>]', dateFormat(startDate))
+            .replace('[<end>]', dateFormat(endDate))
+            .replaceAll('[<subject>]', subject)
+            .replace('[<requirements>]', strLine)
+
+        await channel.send(msg)
+        console.log('[LOGS] Message is sent to <' + subject + '>')
+
+        channel = await client.channels.fetch(currChannel.id)
+        log = log
+            .concat(subject + ' ')
+            .concat(channel.id + ' ')
+            .concat(channel.lastMessageId + '\n')
+        counter = counter + 1
     }
-    fs.appendFileSync('./data/recent_message.txt', log)
-    message.channel.send(':partying_face: **[SUCCESS]** Update sent! :books:')
+    if (counter != 0) {
+        fs.appendFileSync('./data/recent_message.txt', log)
+    }
+
+    message.channel.send('```css\n#Success Update sent in ' + counter + ' channel(s)\n```')
 }
 
 
 // Argument checking
 
-const checkArgs = (message, args) => {
-    const subjects = fs.readFileSync('./data/subjects.txt', 'utf-8').split('\n')
-    for (subj of args) {
-        if (!subjects.includes(subj)) {
-            return -1
+const checkArgs = (userInputs) => {
+    const listOfSubjects = fs.readFileSync('./data/subjects.txt', 'utf-8').split('\n')
+    const invalidInputs = new Array()
+
+    for (subj of userInputs) {
+        if (!listOfSubjects.includes(subj)) {
+            invalidInputs.push(subj)
         }
     }
-    return args
+    if (invalidInputs.length == 0) {
+        return userInputs
+    } else {
+        throw invalidInputs
+    }
 }
 
 
@@ -129,34 +150,47 @@ module.exports = {
     desc: "",
 
     async execute(client, guild, message, args) {
-        let startDate = new Date()
-        let endDate = new Date(new Date().setDate(startDate.getDate() + 7))
+        args = args.split(',').filter(Boolean)
+        if (args[0] == 'week') {
+            var startDate = getFirstDayOfWeek(new Date())
+            var endDate = new Date(new Date().setDate(startDate.getDate() + 8))
+            args.shift()
+        } else {
+            startDate = new Date()
+            endDate = new Date(new Date().setDate(startDate.getDate() + 8))
+        }
 
-        args = args ? checkArgs(message, args.split(',')) : args
-        if (args == -1) {
-            console.log('[ERROR] Invalid subject <' + subj + '>')
-            message.channel.send(':face_with_symbols_over_mouth: **[ERROR]**  Invalid subject :point_right_tone1: **' + subj.toUpperCase() + '**:point_left_tone1:')
+        // Get list of target subjects
+        try {
+            var targetSubjects = checkArgs(args)
+        } catch (invalidInputs) {
+            console.log('[ERROR] Invalid input subject: ' + invalidInputs.toString())
+            await message.channel.send('```css\n[ERROR] Invalid subject: ' + invalidInputs.toString() + '\n```')
             return
         }
 
-        // Get list of subject channel
-        let acadChannels = getChannels(guild)
+        console.log('Searching date: ' + dateFormat(startDate) + ' to ' + dateFormat(endDate))
+        await message.channel.send('```diff\n! Searching Date: ' + dateFormat(startDate) + ' to ' + dateFormat(endDate) + '\n```')
 
-        // Authenticate Google Cloud Platform
-        let { calendar, auth } = enableGCP()
+
+
+
+        // Get list of subject channel
+        const acadChannels = getChannels(guild)
 
         // Get list of events from google calendar
-        let calEvents = await getEvents(calendar, auth, startDate, endDate)
-        if (!calEvents) {
+        try {
+            var calendarEvents = await getEvents(startDate, endDate)
+        } catch (error) {
             console.log('[ERROR] Unsuccessful Google Calendar Authentication')
-            message.channel.send(':face_with_symbols_over_mouth: **[ERROR]**  Unsuccessful Google Calendar Authentication')
+            message.channel.send('```css\n[ERROR] Unsuccessful Google Calendar Authentication\n```')
             return
         }
 
         // Organize events, collect similar subjects
-        let newEvents = categorizeEvents(message, args, calEvents)
+        let newEvents = categorizeEvents(message, args, startDate, calendarEvents)
 
         // Find the correct channel for each subject and send the message
-        sendEvents(client, newEvents, acadChannels, startDate, endDate, message, args)
+        sendEvents(client, message, startDate, endDate, targetSubjects, acadChannels, newEvents)
     }
 }

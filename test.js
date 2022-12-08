@@ -1,69 +1,86 @@
-const { google } = require('googleapis')
-require('dotenv/config')
 
-const CREDENTIALS = JSON.parse(process.env.GOOGLE_CREDENTIALS)
-const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID
+// x1 = true
+// x2 = true
+// x3 = false
 
-// Initialize Google Calendar and Cloud Service
-const calendar = google.calendar({ version: "v3" })
-const auth = new google.auth.JWT(
-    CREDENTIALS.client_email,
-    null,
-    CREDENTIALS.private_key,
-    ["https://www.googleapis.com/auth/calendar"]
-)
+// const one = () => {
+//     return new Promise((resolve, reject) => {
+//         if (x1) {
+//             resolve('resolve one')
+//         } else {
+//             reject('reject one')
+//         }
+//     })
+// }
+
+// const two = () => {
+//     return new Promise((resolve, reject) => {
+//         if (x2) {
+//             resolve('resolve two')
+//         } else {
+//             reject('reject two')
+//         }
+//     })
+// }
+// const three = () => {
+//     return new Promise((resolve, reject) => {
+//         if (x3) {
+//             resolve('resolve three')
+//         } else {
+//             reject('reject three')
+//         }
+//     })
+// }
+
+// async function test() {
+//     var temp = await one()
+//         .then((ret) => {
+//             console.log(ret)
+//             return two()
+//         })
+//         .then((ret) => {
+//             console.log(ret)
+//             return three()
+//         })
+//         .then((ret) => {
+//             console.log(ret)
+//             return 'hello'
+//         })
+//         .catch((ret) => {
+//             console.log(ret)
+//             return 'nop'
+//         })
+
+//     console.log(temp)
+// }
+
+// test()
 
 
+// const invalidInputs = new Array()
+// if (invalidInputs) {
+//     console.log(invalidInputs)
+// }
 
-// Get list of events from google calendar
-const getEvents = async (startDate, endDate) => {
-    try {
-        let response = await calendar.events.list({
-            auth: auth,
-            calendarId: CALENDAR_ID,
-            timeMin: startDate,
-            timeMax: endDate,
-            timeZone: 'Asia/Singapore'
-        })
+// var gg = ''
+// xx = gg.split(',')
+// console.log(xx)
+// gg = gg.split(',').filter(Boolean)
+// console.log(gg)
+// if (gg) {
+//     console.log('object')
+// }
 
-        sendEvents(response['data']['items'])
-    } catch (error) {
-        console.log(`Error at getEvents --> ${error}`)
-        return 0
-    }
-}
+// let temp = 'hel-lo cs-2 1'
+// temp = temp.replaceAll(/[\s-]/g, '')
+// console.log(temp)
 
-const sendEvents = (items) => {
-    console.log(items.length)
-    var events = new Object
-    for (let i = 0; i < items.length; i++) {
-        if (items[i] == null) continue
-        var subj = items[i].summary.split(' ')[1]
-        events[subj] = [items[i]]
-        for (let j = i + 1; j < items.length; j++) {
-            if (items[j] == null) continue
-            var xSubj = items[j].summary.split(' ')[1]
-            if (subj == xSubj) {
-                events[subj].push(items[j])
-                items[j] = null
-            }
-        }
-    }
-    console.log(events)
-    // const events = new Object()
-    // for (var item of items) {
-    //     var subj = item.summary.split(' ')[1]
-    //     events.subj = [item]
-    //     for (var n of items) {
-    //         if (item == n) continue
-    //         if (subj == n.summary.split(' ')[1]) {
-    //             events.subj.push(n)
+// let newEvents = new Object
+// let subj = 'math'
+// let a = 'a'
 
-    //         }
-    //     }
-    // }
-}
+// newEvents[subj] = newEvents[subj].concat([a])
+// console.log(newEvents)
 
-let startDate = new Date()
-let endDate = new Date(new Date().setDate(startDate.getDate() + 14))
-getEvents(startDate, endDate)
+var test = [1, 2, 3, 4, 3]
+console.log(test.lastIndexOf(6))

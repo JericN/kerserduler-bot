@@ -1,8 +1,9 @@
 module.exports = {
 	name: "Check Status",
-	code: "status",
+	code: "send",
 
 	async execute(client, guild, message, args) {
-		await message.channel.send("I'm Ready!")
+		message.delete()
+		await message.channel.send(args.replaceAll(',', ' '))
 	}
 }
