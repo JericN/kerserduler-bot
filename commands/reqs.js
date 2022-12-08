@@ -1,8 +1,7 @@
-const { google } = require('googleapis')
+const { getEvents } = require('../functions/calendarHandler.js')
 const fs = require('fs')
-const { rejects } = require('assert')
-require('dotenv/config')
 
+const listOfSubjects = fs.readFileSync('./data/subjects.txt', 'utf-8').split('\n')
 
 // Format date to <month> <day>
 function dateFormat(date) {
@@ -17,13 +16,50 @@ function getFirstDayOfWeek() {
     return new Date(date.setDate(diff))
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// Argument checking
+const parseArguments = (args) => {
+    const invalidInputs = new Array()
+
+    // check if 'week' argument is present, set time span
+    if (args.includes('week')) {
+        var startDate = getFirstDayOfWeek(new Date())
+        var endDate = new Date(new Date().setDate(startDate.getDate() + 8))
+        args.splice(args.indexOf('week'), 1)
+    } else {
+        startDate = new Date()
+        endDate = new Date(new Date().setDate(startDate.getDate() + 8))
+    }
+
+    // check for invalid arguments
+    for (subj of args) {
+        if (!listOfSubjects.includes(subj)) {
+            invalidInputs.push(subj)
+        }
+    }
+
+    // return corresponsing data
+    if (invalidInputs.length == 0) {
+        return {
+            'targetSubjects': args,
+            'startDate': startDate,
+            'endDate': endDate
+        }
+    } else {
+        throw invalidInputs.toString()
+    }
+}
+
+
 // Get respective channel for each subject
 const getChannels = (guild) => {
-    const subjects = fs.readFileSync('./data/subjects.txt', 'utf-8').split('\n')
     let acadChannels = new Object()
     guild.channels.cache.forEach((channel) => {
         const name = channel.name.replaceAll(/[\s_-]/g, '')
-        if (subjects.includes(name)) {
+        if (listOfSubjects.includes(name)) {
             acadChannels[name] = channel
         }
     })
@@ -31,117 +67,64 @@ const getChannels = (guild) => {
 }
 
 
-// Get list of events from google calendar
-const getEvents = async (startDate, endDate) => {
-    const calendar = google.calendar({ version: "v3" })
-    const auth = new google.auth.JWT(
-        process.env.GCP_CLIENT_EMAIL,
-        null,
-        process.env.GCP_PRIVATE_KEY,
-        ["https://www.googleapis.com/auth/calendar"]
-    )
-    const response = await calendar.events.list({
-        auth: auth,
-        calendarId: process.env.GOOGLE_CALENDAR_CURSOR_ID,
-        timeMin: startDate,
-        timeMax: endDate,
-        timeZone: 'Asia/Singapore'
-    })
-    return response['data']['items']
-}
-
-// Organize events, collect similar subjects
-const categorizeEvents = (message, args, startDate, calEvents) => {
-    const subjNames = ['math', 'physics', 'cs']
-    let newEvents = new Object
-    for (req of calEvents) {
-        const a = new Date(req['start']['date']).getTime()
-        const b = new Date(startDate).getTime()
-        if (a < b) continue
-
-        let [name, num] = req.summary.split(' ')
-        name = name.toLowerCase()
-
-        if (!subjNames.includes(name)) {
-            console.log('[WARNING] Calendar Event <' + req.summary + '> is not recognized')
-            if (!args) message.channel.send('```css\n[WARNING] Calendar Event ' + req.summary + ' is not recognized\n```')
-            continue
-        }
-
-        const subj = name + num
-        if (newEvents[subj]) {
-            newEvents[subj].push(req)
-        } else {
-            newEvents[subj] = [req]
-        }
-    }
-
-    return newEvents
-}
-
 // Send Events to their respective channels
-const sendEvents = async (client, message, startDate, endDate, targetSubjects, acadChannels, newEvents) => {
+const sendEvents = async (client, message, startDate, endDate, targetSubjects, acadChannels, validEvents) => {
     const script = fs.readFileSync('./data/script.txt', 'utf-8')
     let log = new String().concat('#step\n')
     let counter = 0
-    for (let subject in newEvents) {
-        if (targetSubjects != 0 && !targetSubjects.includes(subject)) continue
 
+    for (let subject in validEvents) {
+
+        // If specific subject is stated in args, check if included 
+        if (targetSubjects.length != 0 && !targetSubjects.includes(subject)) continue
+
+        // Check if a channel exist for that subject
         const currChannel = acadChannels[subject]
         if (!currChannel) {
+            delete validEvents[subject]
             console.log('[WARNING] No <' + subject + '> channel found!')
             message.channel.send('```css\n[WARNING] Channel for ' + subject + ' is not recognized\n```')
             continue
         }
 
-        let channel = await client.channels.fetch(currChannel.id)
-
+        // Collate all requirements
         let strLine = new String()
-        newEvents[subject].forEach((reqs) => {
+        validEvents[subject].forEach((reqs) => {
             strLine = strLine.concat('📍 **' + dateFormat(new Date(reqs['start']['date'])) + '**  ' + reqs['summary'] + '\n')
         })
 
+        // Edit script
         const msg = script
             .replace('[<start>]', dateFormat(startDate))
             .replace('[<end>]', dateFormat(endDate))
             .replaceAll('[<subject>]', subject)
             .replace('[<requirements>]', strLine)
 
-        await channel.send(msg)
-        console.log('[LOGS] Message is sent to <' + subject + '>')
+        // Send message to its corresponding channel
+        await currChannel.send(msg)
+        console.log('[LOGS] Message is sent to <' + subject + '> channel')
+        message.channel.send('```diff\n![LOGS] Message is sent to ' + subject + ' channel\n```')
+        counter = counter + 1
+    }
 
-        channel = await client.channels.fetch(currChannel.id)
+    await new Promise(resolve => setTimeout(resolve, 2000))
+
+    for (subject in validEvents) {
+        channel = await client.channels.fetch(acadChannels[subject].id)
         log = log
             .concat(subject + ' ')
             .concat(channel.id + ' ')
             .concat(channel.lastMessageId + '\n')
-        counter = counter + 1
     }
+
     if (counter != 0) {
         fs.appendFileSync('./data/recent_message.txt', log)
     }
-
     message.channel.send('```css\n#Success Update sent in ' + counter + ' channel(s)\n```')
 }
 
 
-// Argument checking
 
-const checkArgs = (userInputs) => {
-    const listOfSubjects = fs.readFileSync('./data/subjects.txt', 'utf-8').split('\n')
-    const invalidInputs = new Array()
-
-    for (subj of userInputs) {
-        if (!listOfSubjects.includes(subj)) {
-            invalidInputs.push(subj)
-        }
-    }
-    if (invalidInputs.length == 0) {
-        return userInputs
-    } else {
-        throw invalidInputs
-    }
-}
 
 
 module.exports = {
@@ -151,46 +134,39 @@ module.exports = {
 
     async execute(client, guild, message, args) {
         args = args.split(',').filter(Boolean)
-        if (args[0] == 'week') {
-            var startDate = getFirstDayOfWeek(new Date())
-            var endDate = new Date(new Date().setDate(startDate.getDate() + 8))
-            args.shift()
-        } else {
-            startDate = new Date()
-            endDate = new Date(new Date().setDate(startDate.getDate() + 8))
-        }
 
-        // Get list of target subjects
+        // Parse input argument
         try {
-            var targetSubjects = checkArgs(args)
+            var { targetSubjects, startDate, endDate } = parseArguments(args)
+            console.log('Searching date: ' + dateFormat(startDate) + ' to ' + dateFormat(endDate))
+            await message.channel.send('```diff\n! Searching Date: ' + dateFormat(startDate) + ' to ' + dateFormat(endDate) + '\n```')
         } catch (invalidInputs) {
-            console.log('[ERROR] Invalid input subject: ' + invalidInputs.toString())
-            await message.channel.send('```css\n[ERROR] Invalid subject: ' + invalidInputs.toString() + '\n```')
+            console.log('[ERROR] Invalid input subject: ' + invalidInputs)
+            await message.channel.send('```css\n[ERROR] Invalid subject: ' + invalidInputs + '\n```')
             return
         }
-
-        console.log('Searching date: ' + dateFormat(startDate) + ' to ' + dateFormat(endDate))
-        await message.channel.send('```diff\n! Searching Date: ' + dateFormat(startDate) + ' to ' + dateFormat(endDate) + '\n```')
-
-
-
 
         // Get list of subject channel
         const acadChannels = getChannels(guild)
 
         // Get list of events from google calendar
         try {
-            var calendarEvents = await getEvents(startDate, endDate)
+            var { validEvents, invalidEvents } = await getEvents(targetSubjects, startDate, endDate)
         } catch (error) {
+            console.log(error)
             console.log('[ERROR] Unsuccessful Google Calendar Authentication')
             message.channel.send('```css\n[ERROR] Unsuccessful Google Calendar Authentication\n```')
             return
         }
 
-        // Organize events, collect similar subjects
-        let newEvents = categorizeEvents(message, args, startDate, calendarEvents)
-
+        if (targetSubjects.length == 0) {
+            for (req of invalidEvents) {
+                console.log('[WARNING] Calendar Event <' + req + '> is not recognized')
+                message.channel.send('```css\n[WARNING] Calendar Event ' + req + ' is not recognized\n```')
+            }
+        }
         // Find the correct channel for each subject and send the message
-        sendEvents(client, message, startDate, endDate, targetSubjects, acadChannels, newEvents)
+        await sendEvents(client, message, startDate, endDate, targetSubjects, acadChannels, validEvents)
+        console.log('>>>>>>>>>>>>>>>>>> DONE <<<<<<<<<<<<<<<<<<<')
     }
 }

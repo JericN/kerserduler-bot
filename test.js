@@ -82,5 +82,40 @@
 // newEvents[subj] = newEvents[subj].concat([a])
 // console.log(newEvents)
 
-var test = [1, 2, 3, 4, 3]
-console.log(test.lastIndexOf(6))
+// var test = [1, 2, 3, 4, 3]
+// console.log(test.lastIndexOf(6))
+
+// let cat = 'complete'
+// if (cat == 'complete') {
+//     console.log('object')
+// }
+// console.log('sdsd')
+
+
+// args = ['12', 'week', '213']
+// args.splice(args.indexOf('week'), 1)
+// console.log(args)
+
+// const temp = () => {
+//     const a = 1
+//     const b = 2
+//     const c = 3
+//     return { a1: a, b1: b, c1: c }
+// }
+
+// var { a1, b1, c1 } = temp()
+// console.log(a1, b1, c1)
+
+let x = 0
+setTimeout(async () => {
+    x = x + 1
+}, 1000)
+setTimeout(async () => {
+    x = x + 1
+}, 300)
+setTimeout(async () => {
+    x = x + 1
+}, 1000)
+setTimeout(async () => {
+    console.log(x)
+}, 2000)

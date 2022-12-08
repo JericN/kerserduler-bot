@@ -1,5 +1,5 @@
 math23
-physic72
+physics72
 cs11
 cs12
 cs20
