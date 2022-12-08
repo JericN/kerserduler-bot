@@ -3,8 +3,7 @@ const { google } = require('googleapis')
 const fs = require('fs')
 const listOfSubject = fs.readFileSync('./data/subjects.txt', 'utf-8').split('\n').filter(Boolean)
 
-
-exports.getEvents = async (targetSubjects, startDate, endDate) => {
+const getCalendarEvents = async (startDate, endDate) => {
     const calendar = google.calendar({ version: "v3" })
     const auth = new google.auth.JWT(
         process.env.GCP_CLIENT_EMAIL,
@@ -19,8 +18,21 @@ exports.getEvents = async (targetSubjects, startDate, endDate) => {
         timeMax: endDate,
         timeZone: 'Asia/Singapore'
     })
-    const calendarEvents = response['data']['items']
+    let calendarEvents = response['data']['items']
 
+    for (req in calendarEvents) {
+        const dateA = new Date(calendarEvents[req]['start']['date']).getTime()
+        const dateB = new Date(startDate).getTime()
+        if (dateA < dateB) {
+            calendarEvents[req] = ''
+        }
+    }
+
+    return calendarEvents.filter(Boolean)
+}
+const getEvents = async (targetSubjects, startDate, endDate) => {
+
+    const calendarEvents = await getCalendarEvents(startDate, endDate)
 
     let validEvents = new Object
     let invalidEvents = new Array
@@ -37,10 +49,6 @@ exports.getEvents = async (targetSubjects, startDate, endDate) => {
 
         if (targetSubjects.length != 0 && !targetSubjects.includes(subj)) continue
 
-        const dateA = new Date(req['start']['date']).getTime()
-        const dateB = new Date(startDate).getTime()
-        if (dateA < dateB) continue
-
         if (validEvents[subj]) {
             validEvents[subj].push(req)
         } else {
@@ -50,3 +58,4 @@ exports.getEvents = async (targetSubjects, startDate, endDate) => {
     return { validEvents, invalidEvents }
 }
 
+module.exports = { getEvents, getCalendarEvents }
