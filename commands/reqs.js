@@ -97,7 +97,7 @@ const sendEvents = async (client, message, startDate, endDate, targetSubjects, a
         const msg = script
             .replace('[<start>]', dateFormat(startDate))
             .replace('[<end>]', dateFormat(endDate))
-            .replaceAll('[<subject>]', subject)
+            .replaceAll('[<subject>]', subject.toUpperCase())
             .replace('[<requirements>]', strLine)
 
         // Send message to its corresponding channel

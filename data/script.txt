@@ -2,7 +2,7 @@
 
 Hello, @[<subject>] !
 
-**__The following deadlines for CS [<subject>]  are coming up:__**
+**__The following deadlines for [<subject>]  are coming up:__**
 [<requirements>]
 
 **__To view our centralized database of  important links, visit our Acad Domain:__**
