@@ -46,5 +46,6 @@ module.exports = {
 
         message.channel.send('```css\n#Success ' + counter + ' message deleted\n```')
         message.react('✅')
+        console.log('>>>>>>>>>>>>>>>>>> DONE <<<<<<<<<<<<<<<<<<<\n\n')
     }
 }

@@ -4,15 +4,14 @@ const fs = require('fs')
 const listOfSubject = fs.readFileSync('./data/subjects.txt', 'utf-8').split('\n').filter(Boolean)
 
 const getCalendarEvents = async (startDate, endDate) => {
-    const calendar = google.calendar({ version: "v3" })
-    const auth = new google.auth.JWT(
-        process.env.GCP_CLIENT_EMAIL,
-        null,
-        process.env.GCP_PRIVATE_KEY,
-        ["https://www.googleapis.com/auth/calendar"]
-    )
+
+    const auth = new google.auth.GoogleAuth({
+        keyFile: './googlekey.json',
+        scopes: ["https://www.googleapis.com/auth/calendar"]
+    })
+    const calendar = google.calendar({ version: "v3", auth })
+    
     const response = await calendar.events.list({
-        auth: auth,
         calendarId: process.env.GOOGLE_CALENDAR_CURSOR_ID,
         timeMin: startDate,
         timeMax: endDate,

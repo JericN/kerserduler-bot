@@ -12,8 +12,8 @@ function getFirstDayOfWeek() {
 }
 
 module.exports = {
-    name: "Get Events",
-    code: "get",
+    name: "Get list Events",
+    code: "list",
 
     async execute(client, guild, message, args) {
         args.split(',').filter(Boolean)
