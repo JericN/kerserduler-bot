@@ -2,9 +2,6 @@ const { google } = require('googleapis')
 const fs = require('fs')
 require('dotenv/config')
 
-const CREDENTIALS = JSON.parse(process.env.GOOGLE_CREDENTIALS)
-const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID
-
 const deleteMessage = async (client, message, msgData, counter) => {
     msgData = msgData.split(' ')
     const channel = client.channels.cache.get(msgData[1])

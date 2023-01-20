@@ -1,4 +1,7 @@
 {
+"scripts": {
+  "build": "node index.js"
+},
   "dependencies": {
     "discord.js": "^14.7.0",
     "dotenv": "^16.0.3",
