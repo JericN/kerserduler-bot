@@ -1,9 +1,11 @@
 
 const fs = require('fs');
+const path = require('path');
 const { Client, Interaction, ApplicationCommandOptionType } = require('discord.js');
+const getCalendarEvents = require('../../utils/google/getCalendarEvents.js');
 
-const { getEvents } = require('../functions/calendarHandler.js');
-const listOfSubjects = fs.readFileSync('./data/subjects.txt', 'utf-8').split('\n');
+const listOfSubjects = fs.readFileSync(path.join(__dirname, '../../data/subjects.txt'), 'utf-8').split(/\r?\n/);
+const messageScript = fs.readFileSync(path.join(__dirname, '../../data/script.txt'), 'utf-8');
 
 // Format date to <month> <day>
 function dateFormat(date) {
@@ -21,112 +23,6 @@ function getFirstDayOfWeek() {
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-
-// Argument checking
-const parseArguments = (args) => {
-    const invalidInputs = new Array();
-
-    // check if 'week' argument is present, set time span
-    if (args.includes('week')) {
-        var startDate = getFirstDayOfWeek(new Date());
-        var endDate = new Date(new Date().setDate(startDate.getDate() + 8));
-        args.splice(args.indexOf('week'), 1);
-    } else {
-        startDate = new Date();
-        endDate = new Date(new Date().setDate(startDate.getDate() + 8));
-    }
-
-    // check for invalid arguments
-    for (subj of args) {
-        if (!listOfSubjects.includes(subj)) {
-            invalidInputs.push(subj);
-        }
-    }
-
-    // return corresponsing data
-    if (invalidInputs.length == 0) {
-        return {
-            'targetSubjects': args,
-            'startDate': startDate,
-            'endDate': endDate
-        };
-    } else {
-        throw invalidInputs.toString();
-    }
-};
-
-
-// Get respective channel for each subject
-const getChannels = (guild) => {
-    let acadChannels = new Object();
-    guild.channels.cache.forEach((channel) => {
-        const name = channel.name.replaceAll(/[\s_-]/g, '');
-        if (listOfSubjects.includes(name)) {
-            acadChannels[name] = channel;
-        }
-    });
-    return acadChannels;
-};
-
-
-// Send Events to their respective channels
-const sendEvents = async (client, message, startDate, endDate, targetSubjects, acadChannels, validEvents) => {
-    const script = fs.readFileSync('./data/script.txt', 'utf-8');
-    let logs = new String().concat('#step\n');
-    let counter = 0;
-
-    for (let subject in validEvents) {
-
-        // If specific subject is stated in args, check if included 
-        if (targetSubjects.length != 0 && !targetSubjects.includes(subject)) continue;
-
-        // Check if a channel exist for that subject
-        const currChannel = acadChannels[subject];
-        if (!currChannel) {
-            delete validEvents[subject];
-            console.log('[WARNING] No <' + subject + '> channel found!');
-            message.channel.send('```css\n[WARNING] Channel for ' + subject + ' is not recognized\n```');
-            continue;
-        }
-
-        // Collate all requirements
-        let strLine = new String();
-        validEvents[subject].forEach((reqs) => {
-            strLine = strLine.concat('📍 **' + dateFormat(new Date(reqs['start']['date'])) + '**  ' + reqs['summary'] + '\n');
-        });
-
-        // Edit script
-        const msg = script
-            .replace('[<start>]', dateFormat(startDate))
-            .replace('[<end>]', dateFormat(endDate))
-            .replaceAll('[<subject>]', subject.toUpperCase())
-            .replace('[<requirements>]', strLine);
-
-        // Send message to its corresponding channel
-        await currChannel.send(msg);
-    }
-
-    // Pause execution, give time for discord to load new message
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Save new messages to the logs file
-    for (subject in validEvents) {
-        console.log('[LOGS] Message is sent to <' + subject + '> channel');
-        message.channel.send('```\n[LOGS] Message is sent to ' + subject + ' channel\n```');
-        counter = counter + 1;
-
-        channel = await client.channels.fetch(acadChannels[subject].id);
-        logs = logs
-            .concat(subject + ' ')
-            .concat(channel.id + ' ')
-            .concat(channel.lastMessageId + '\n');
-    }
-
-    if (counter != 0) {
-        fs.appendFileSync('./data/recent_message.txt', logs);
-    }
-    await message.channel.send('```css\n#Success Update sent in ' + counter + ' channel(s)\n```');
-};
 
 
 
@@ -187,48 +83,149 @@ module.exports = {
             description: 'Subject(s) to query ex."21 33 132"',
             type: ApplicationCommandOptionType.String,
             required: false,
+        },
+        {
+            name: 'supress',
+            description: 'Force send valid events to channels while ignoring invalid subjects',
+            type: ApplicationCommandOptionType.String,
+            required: false,
+            choices: [
+                {
+                    name: 'yes',
+                    value: 'yes'
+                },
+                {
+                    name: 'no',
+                    value: 'no'
+                },
+            ]
         }
     ],
     callback: async (client, interaction) => {
         await interaction.deferReply({ ephemeral: true });
 
+        // get query values
+        const duration = interaction.options.get('span').value;
+        const align = interaction.options.get('align').value;
+        const subjects = interaction.options.get('subjects')?.value.split(' ') || [];
+        const supress = interaction.options.get('supress')?.value || 'no';
 
-        // Parse input argument
-        try {
-            var { targetSubjects, startDate, endDate } = parseArguments(args);
-            console.log('Searching date: ' + dateFormat(startDate) + ' to ' + dateFormat(endDate));
-            await message.channel.send('```diff\n!Searching Span: ' + dateFormat(startDate) + ' to ' + dateFormat(endDate) + '\n```');
-        } catch (invalidInputs) {
-            console.log('[ERROR] Invalid input subject: ' + invalidInputs);
-            await message.channel.send('```css\n[ERROR] Invalid subject: ' + invalidInputs + '\n```');
-            await message.react('❎');
+        // set search span
+        const startDate = (align == 'yes') ? getFirstDayOfWeek() : new Date();
+        const endDate = new Date(new Date().setDate(startDate.getDate() + duration * 7 - 1));
+
+        // Parse subjects
+        const invalidSubjects = new Array();
+        subjects.forEach((subject, i) => {
+            subjects[i] = subject = 'cs' + subject;
+            if (!listOfSubjects.includes(subject))
+                invalidSubjects.push(subject);
+        });
+
+        // check invalid subject input
+        if (invalidSubjects.length != 0) {
+            interaction.editReply(`\`\`\`[ERROR] Invalid subject(s): ${invalidSubjects.toString()} \`\`\``);
             return;
         }
-
-        // Get list of subject channel
-        const acadChannels = getChannels(guild);
 
         // Get list of events from google calendar
         try {
-            var { validEvents, invalidEvents } = await getEvents(targetSubjects, startDate, endDate);
+            var { validEvents, invalidEvents } = await getCalendarEvents(startDate, endDate);
         } catch (error) {
-            console.log(error);
-            console.log('[ERROR] Unsuccessful Google Calendar Authentication');
-            await message.channel.send('```css\n[ERROR] Unsuccessful Google Calendar Authentication\n```');
-            await message.react('❎');
+            interaction.editReply('```[ERROR] Unsuccessful Google Calendar Authentication```');
             return;
         }
 
-        // Dont show warning logs if on selective search
-        if (targetSubjects.length == 0) {
-            for (req of invalidEvents) {
-                console.log('[WARNING] Calendar Event <' + req + '> is not recognized');
-                message.channel.send('```css\n[WARNING] Calendar Event ' + req + ' is not recognized\n```');
+        if (!subjects.length) {
+            for (const event of invalidEvents) {
+                interaction.editReply(`\`\`\`[WARNING] Calendar Event < ${event['summary']} > is not recognize\`\`\``);
+                if (supress == 'no') {
+                    return;
+                }
             }
         }
+
         // Find the correct channel for each subject and send the message
-        await sendEvents(client, message, startDate, endDate, targetSubjects, acadChannels, validEvents);
-        message.react('✅');
-        console.log('>>>>>>>>>>>>>>>>>> DONE <<<<<<<<<<<<<<<<<<<\n\n');
+        await sendEvents(client, interaction, startDate, endDate, subjects, validEvents);
     }
+};
+
+
+// Send Events to their respective channels
+const sendEvents = async (client, interaction, startDate, endDate, subjects, validEvents) => {
+
+    // let logs = new String().concat('#step\n');
+    let counter = 0;
+
+    // get subject channels
+    let channels = new Object();
+    interaction.guild.channels.cache.forEach((channel) => {
+        // check if not text channel
+        if (channel.type != '0') return;
+
+        const name = channel.name.replaceAll(/[\s_-]/g, '');
+        console.log(name);
+        if (listOfSubjects.includes(name)) {
+            channels[name] = channel;
+        }
+    });
+    console.log(channels);
+
+    //     for (let event in validEvents) {
+    //         const channel = channels[event];
+    //         if (!channel) {
+    //             delete validEvents[event];
+    //             console.log(`[WARNING] No < ${event} > channel found!`);
+    //         }
+    //     }
+
+
+    //     for (let event in validEvents) {
+
+    //         // If specific subject is stated in args, check if included
+    //         // if (subjects && !subjects.includes(event)) continue;
+
+
+
+    //         // Check if a channel exist for that subject
+    //         const channel = channels[event];
+
+
+    //         // Collate all requirements
+    //         let eventScript = new String();
+    //         validEvents[event].forEach((reqs) => {
+    //             eventScript = eventScript.concat('📍 **' + dateFormat(new Date(reqs['start']['date'])) + '**  ' + reqs['summary'] + '\n');
+    //         });
+
+    //         // Edit script
+    //         const msg = script
+    //             .replace('[<start>]', dateFormat(startDate))
+    //             .replace('[<end>]', dateFormat(endDate))
+    //             .replaceAll('[<subject>]', subject.toUpperCase())
+    //             .replace('[<requirements>]', eventScript);
+
+    //         // Send message to its corresponding channel
+    //         await currChannel.send(msg);
+    //     }
+
+    //     // Pause execution, give time for discord to load new message
+    //     await new Promise(resolve => setTimeout(resolve, 2000));
+
+    //     // Save new messages to the logs file
+    //     for (subject in validEvents) {
+    //         console.log('[LOGS] Message is sent to <' + subject + '> channel');
+    //         message.channel.send('```\n[LOGS] Message is sent to ' + subject + ' channel\n```');
+    //         counter = counter + 1;
+
+    //         channel = await client.channels.fetch(acadChannels[subject].id);
+    //         logs = logs
+    //             .concat(subject + ' ')
+    //             .concat(channel.id + ' ')
+    //             .concat(channel.lastMessageId + '\n');
+    //     }
+
+    //     if (counter != 0) {
+    //         fs.appendFileSync('./data/recent_message.txt', logs);
+    //     }
+    //     await message.channel.send('```css\n#Success Update sent in ' + counter + ' channel(s) \n```');
 };

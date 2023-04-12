@@ -1,6 +1,9 @@
 require('dotenv/config');
+const fs = require('fs');
 const { google } = require('googleapis');
 const path = require('path');
+
+const listOfSubjects = fs.readFileSync(path.join(__dirname, '../../data/subjects.txt'), 'utf-8').split(/\r?\n/);
 
 
 module.exports = async (startDate, endDate) => {
@@ -20,6 +23,18 @@ module.exports = async (startDate, endDate) => {
         singleEvents: 'true'
     });
 
-    return response['data']['items'];
+    const calendarEvents = response['data']['items'];
+    const validEvents = new Array;
+    const invalidEvents = new Array;
 
-};
+    for (const event of calendarEvents) {
+        const subject = event.summary.split(' ').slice(0, 2).join('').toLowerCase();
+        if (listOfSubjects.includes(subject)) {
+            validEvents.push(event);
+        } else {
+            invalidEvents.push(event);
+        }
+    }
+
+    return { validEvents, invalidEvents };
+};  

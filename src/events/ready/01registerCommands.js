@@ -27,7 +27,6 @@ module.exports = async (client) => {
             description,
             options,
           });
-
           console.log(`🔁 Edited command "${name}".`);
         }
       } else {

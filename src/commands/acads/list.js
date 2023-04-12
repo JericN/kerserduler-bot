@@ -68,21 +68,33 @@ module.exports = {
 
         // get calendar events
         try {
-            var calendarEvents = await getCalendarEvents(startDate, endDate);
+            var { validEvents, invalidEvents } = await getCalendarEvents(startDate, endDate);
         } catch (error) {
+            console.log('⚠ Unsuccessful Google Calendar Authentication!!!!');
             console.log(error);
-            console.log('⚠ Unsuccessful Google Calendar Authentication');
             return;
         }
 
         // create message
-        let script = new String().concat('```').concat(`md\n#[ Events from ${formatDate(startDate)} to ${formatDate(endDate)} ]\n`);
-        for (const req of calendarEvents) {
-            let eventDate = formatDate(new Date(req['start']['date']));
+        let script = new String().concat(`\`\`\`[ Events from ${formatDate(startDate)} to ${formatDate(endDate)} ]\n`);
+
+        for (const event of validEvents) {
+            let eventDate = formatDate(new Date(event['start']['date']));
             eventDate = eventDate.concat(' '.repeat(6 - eventDate.length));
-            script = script.concat(`${eventDate} - ${req.summary} \n`);
+            script = script.concat(`${eventDate} - ${event.summary} \n`);
         }
-        script = script.concat('\n```');;;
+
+        if (invalidEvents.length != 0) {
+            script = script.concat('\n[ Invalid Events Found! ]\n');
+
+            for (const event of invalidEvents) {
+                let eventDate = formatDate(new Date(event['start']['date']));
+                eventDate = eventDate.concat(' '.repeat(6 - eventDate.length));
+                script = script.concat(`${eventDate} - ${event.summary} \n`);
+            }
+        }
+
+        script = script.concat('```');;;
 
         // send message
         await interaction.editReply(script);
