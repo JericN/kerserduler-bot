@@ -1,55 +1,45 @@
 // get list of events from google calendar
+const fs = require('fs');
+const path = require('path');
 
-const { Interaction, ApplicationCommandOptionType } = require('discord.js');
+const { ApplicationCommandOptionType } = require('discord.js');
 const getCalendarEvents = require('../../utils/google/getCalendarEvents.js');
 
 module.exports = {
-    /**
-     * @param {Interaction} interaction
-     */
-
+    deleted: false,
     name: 'list',
     description: 'get list of events',
-    deleted: false,
     options: [
         {
             name: 'span',
-            description: 'Query search span',
+            description: 'Search span',
             type: ApplicationCommandOptionType.Number,
             required: true,
             choices: [
-                {
-                    name: '1 week',
-                    value: 1
-                },
-                {
-                    name: '2 weeks',
-                    value: 2
-                },
-                {
-                    name: '3 weeks',
-                    value: 3
-                },
-                {
-                    name: '4 weeks',
-                    value: 4
-                },
+                { name: '1 week', value: 1 },
+                { name: '2 weeks', value: 2 },
+                { name: '3 weeks', value: 3 },
+                { name: '4 weeks', value: 4 },
             ]
         },
         {
             name: 'align',
-            description: 'Align to first day of the week (sunday)',
+            description: 'Align to first day of the week (sunday). [ default : yes ]',
             type: ApplicationCommandOptionType.String,
-            required: true,
+            required: false,
             choices: [
-                {
-                    name: 'yes',
-                    value: 'yes'
-                },
-                {
-                    name: 'no',
-                    value: 'no'
-                },
+                { name: 'yes', value: 'yes' },
+                { name: 'no', value: 'no' },
+            ]
+        },
+        {
+            name: 'group',
+            description: 'Group result by subject or sorted. [ default : subject ]',
+            type: ApplicationCommandOptionType.String,
+            required: false,
+            choices: [
+                { name: 'subject', value: 'subject' },
+                { name: 'sorted', value: 'sorted' },
             ]
         }
     ],
@@ -58,53 +48,53 @@ module.exports = {
     callback: async (client, interaction) => {
         await interaction.deferReply();
 
-        // get query values
-        const duration = interaction.options.get('span').value;
-        const align = interaction.options.get('align')?.value || 'Yes';
+        // variables
+        var validEventScipt, invalidEventScipt;
+
+        // get option values
+        const optSpan = interaction.options.get('span').value;
+        const optAlign = interaction.options.get('align')?.value || 'yes';
+        const optGroup = interaction.options.get('group')?.value || 'subject';
 
         // set search span
-        const startDate = (align == 'yes') ? getFirstDayOfWeek() : new Date();
-        const endDate = new Date(new Date().setDate(startDate.getDate() + duration * 7 - 1));
+        const startDate = (optAlign == 'yes') ? getFirstDayOfWeek() : new Date();
+        const endDate = new Date(new Date().setDate(startDate.getDate() + optSpan * 7 - 1));
+        // const startDate = new Date(new Date().setDate(new Date().getDate() - 24 * 7 - 1));
+        // const endDate = new Date(new Date().setDate(new Date().getDate() - 20 * 7 - 1));
 
         // get calendar events
         try {
             var { validEvents, invalidEvents } = await getCalendarEvents(startDate, endDate);
         } catch (error) {
-            console.log('⚠ Unsuccessful Google Calendar Authentication!!!!');
-            console.log(error);
+            console.log(`[ERROR] Calendar Request Failed : ${error}`);
             return;
         }
 
-        // create message
-        let script = new String().concat(`\`\`\`[ Events from ${formatDate(startDate)} to ${formatDate(endDate)} ]\n`);
+        // parse valid events to script
+        const validEventList = objectToList(validEvents);
+        if (optGroup == 'sorted') sortEventsByDate(validEventList);
+        validEventScipt = makeEventScript(validEventList);
 
-        for (const event of validEvents) {
-            let eventDate = formatDate(new Date(event['start']['date']));
-            eventDate = eventDate.concat(' '.repeat(6 - eventDate.length));
-            script = script.concat(`${eventDate} - ${event.summary} \n`);
-        }
-
+        // parse invalid events to script
         if (invalidEvents.length != 0) {
-            script = script.concat('\n[ Invalid Events Found! ]\n');
-
-            for (const event of invalidEvents) {
-                let eventDate = formatDate(new Date(event['start']['date']));
-                eventDate = eventDate.concat(' '.repeat(6 - eventDate.length));
-                script = script.concat(`${eventDate} - ${event.summary} \n`);
-            }
+            invalidEventScipt = makeEventScript(objectToList(invalidEvents));
         }
-
-        script = script.concat('```');;;
 
         // send message
-        await interaction.editReply(script);
+        const warningScript = editScript(optSpan, optAlign, optGroup, startDate, endDate, validEventScipt, invalidEventScipt);
+        await interaction.editReply(warningScript);
     }
 };
+
+
+
+
 
 
 function formatDate(date) {
     return date.toLocaleString('default', { month: 'short', day: 'numeric' });
 }
+
 
 function getFirstDayOfWeek() {
     const date = new Date();
@@ -112,3 +102,54 @@ function getFirstDayOfWeek() {
     const diff = date.getDate() - day;
     return new Date(date.setDate(diff));
 }
+
+
+function objectToList(object) {
+    array = new Array();
+    Object.values(object).forEach((events) => {
+        array.push(...events);
+    });
+    return array;
+}
+
+
+function sortEventsByDate(events) {
+    events.sort((a, b) => {
+        return new Date(a['start']['date']) - new Date(b['start']['date']);
+    });
+}
+
+
+function makeEventScript(events, script = '') {
+    const makeScript = (event) => {
+        let eventDate = formatDate(new Date(event['start']['date']));
+        eventDate = eventDate.concat(' '.repeat(6 - eventDate.length));
+        return (`${eventDate} - ${event.summary} \n`);
+    };
+
+    events.forEach((event) => {
+        script = script.concat(makeScript(event));
+    });
+    return script;
+}
+
+
+function editScript(optSpan, optAlign, optGroup, startDate, endDate, validEventScipt, invalidEventScipt) {
+    const commandScript = `Command: list [span] ${optSpan} week(s), [align] ${optAlign}, [group] ${optGroup}`;
+    let warningScript = fs.readFileSync(path.join(__dirname, '../../data/scripts/list_warning.txt'), 'utf-8');
+    warningScript = warningScript
+        .replace('[<command>]', commandScript)
+        .replace('[<startDate>]', formatDate(startDate))
+        .replace('[<endDate>]', formatDate(endDate))
+        .replace('[<validEvents>]', validEventScipt);
+
+    if (invalidEventScipt.length != 0) invalidEventScipt = '[ Unrecognized Events Found! ]\n' + invalidEventScipt;
+    warningScript = warningScript.replace('[<invalidEvents>]', invalidEventScipt);
+
+    return warningScript;
+}
+
+
+
+// const startDate = new Date(new Date().setDate(new Date().getDate() - 24 * 7 - 1));
+// const endDate = new Date(new Date().setDate(new Date().getDate() - 20 * 7 - 1));

@@ -24,15 +24,23 @@ module.exports = async (startDate, endDate) => {
     });
 
     const calendarEvents = response['data']['items'];
-    const validEvents = new Array;
-    const invalidEvents = new Array;
+    const validEvents = new Object;
+    const invalidEvents = new Object;
 
     for (const event of calendarEvents) {
         const subject = event.summary.split(' ').slice(0, 2).join('').toLowerCase();
         if (listOfSubjects.includes(subject)) {
-            validEvents.push(event);
+            if (validEvents[subject]) {
+                validEvents[subject].push(event);
+            } else {
+                validEvents[subject] = [event];
+            }
         } else {
-            invalidEvents.push(event);
+            if (invalidEvents[subject]) {
+                invalidEvents[subject].push(event);
+            } else {
+                invalidEvents[subject] = [event];
+            }
         }
     }
 
