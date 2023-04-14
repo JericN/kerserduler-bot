@@ -310,7 +310,7 @@ async function sendEvents(startDate, endDate, channels, events) {
 
 
 function saveLogs(logs) {
-    let msg = '[x] ' + new Date() + '\n';
+    let msg = '[x]' + new Date() + '\n';
     for (const log of logs['okke']) {
         const subject = log['subject'];
         const channelId = log.data.channel.id;
