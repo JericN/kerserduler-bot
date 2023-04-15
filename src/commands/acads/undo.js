@@ -11,7 +11,6 @@ const deleteMessages = async (client, events) => {
     const logs = new Object({ 'okke': [], 'nono': [] });
     for (const event of events) {
         const [subject, channelId, messageId] = event.split(' ');
-        console.log(subject, channelId, messageId);
         const channel = client.channels.cache.get(channelId);
         try {
             const message = await channel.messages.fetch(messageId);
@@ -29,19 +28,24 @@ const deleteMessages = async (client, events) => {
 
 module.exports = {
     deleted: false,
-    name: 'undo',
-    description: 'Unsend recent update from channels',
+    name: 'recent',
+    description: 'get recent updates from channels',
     options: [
         {
-            name: 'subjects',
-            description: 'Subject(s) to query ex."21 33 132"',
+            name: 'action',
+            description: 'Show or delete recent updates',
             type: ApplicationCommandOptionType.String,
-            required: false,
+            required: true,
+            choices: [
+                { name: 'preview', value: 'preview' },
+                { name: 'unsend', value: 'unsend' },
+            ]
         }
     ],
 
     callback: async (client, interaction) => {
         let hist = fs.readFileSync(path.join(__dirname, '../../data/history/922844835931643967.txt'), 'utf-8').split('[x]');
+        const optPreview = interaction.options.get('action')?.value;
         lastEvents = hist.pop();
 
         console.log(lastEvents);
@@ -53,14 +57,29 @@ module.exports = {
 
         const events = lastEvents.split('\n').filter(e => e.length);
         const date = new Date(events.shift());
+
+        if (optPreview == 'preview') {
+            let script = `[Recent updates: ${date.toLocaleString("en-US")}]\n`;
+            for (const event of events) {
+                const subject = event.split(' ').shift();
+                script += subject.replace('cs', 'CS ') + '\n';
+            }
+            await interaction.reply('```' + script + '```');
+            return;
+        }
+
         const logs = await deleteMessages(client, events);
 
         let script = `[Deleting recent update: ${date.toLocaleString("en-US")}]\n`;
-        if (logs['okke'].length != 0) {
+        if (logs['okke'].length != 0 || logs['nono'].length != 0) {
             logs['okke'].forEach((log) => {
                 script += log.replace('cs', '[DELETED] CS ') + '\n';
             });
+            logs['nono'].forEach((log) => {
+                script += log.replace('cs', '[FAILED] CS ') + '\n';
+            });
         }
+
         await interaction.reply('```' + script + '```');
         const newHist = hist.join('[x]');
 

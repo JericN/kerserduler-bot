@@ -135,9 +135,6 @@ module.exports = {
             WARNINGFLAG = true;
         }
 
-        // make and send error script
-
-
         // End program if warning flag is raised unless supressed
         if (optSupress == 'no' && WARNINGFLAG) {
             const script = makeErrorScript(vars, errorWarning, eventWarning, channelWarning);
@@ -148,18 +145,15 @@ module.exports = {
         // Find the correct channel for each subject and send the message
         const logs = await sendEvents(startDate, endDate, channels, validEvents);
 
+        // make script for logs
         if (logs['okke'].length != 0) {
-            logs['okke'].forEach((log) => {
-                okkeScript += log['subject'].replace('cs', '[SENT] CS ') + '\n';
-            });
+            logs['okke'].forEach((log) => { okkeScript += log['subject'].replace('cs', '[SENT] CS ') + '\n'; });
         }
-
         if (logs['nono'].length != 0) {
-            logs['nono'].forEach((log) => {
-                nonoScript += log['subject'].replace('cs', '[FAILED] CS ') + '\n';
-            });
+            logs['nono'].forEach((log) => { nonoScript += log['subject'].replace('cs', '[FAILED] CS ') + '\n'; });
         }
 
+        // make and send error script
         const script = makeErrorScript(vars, errorWarning, eventWarning, channelWarning, okkeScript, nonoScript);
         await interaction.editReply(script);
 
