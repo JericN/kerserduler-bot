@@ -3,7 +3,7 @@ const {
 } = require('discord.js');
 
 module.exports = {
-	deleted: false,
+	deleted: true,
 
 	name: 'send',
 	description: 'Send your message via bot',

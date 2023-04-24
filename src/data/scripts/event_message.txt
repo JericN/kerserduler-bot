@@ -1,6 +1,6 @@
 **[Week of [<start>] - [<end>]]**
 
-Hello, @[<subject>] !
+Hello, [<role>] !
 
 **__The following deadlines for [<subject>]  are coming up:__**
 [<requirements>]

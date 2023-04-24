@@ -4,18 +4,9 @@ const path = require('path');
 
 const { ApplicationCommandOptionType } = require('discord.js');
 const getCalendarEvents = require('../../utils/google/getCalendarEvents.js');
-const { channel } = require('diagnostics_channel');
 
 const listOfSubjects = fs.readFileSync(path.join(__dirname, '../../data/subjects.txt'), 'utf-8').split(/\r?\n/);
 const messageScript = fs.readFileSync(path.join(__dirname, '../../data/scripts/event_message.txt'), 'utf-8');
-
-// Format date to <month> <day>
-
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 
 
 module.exports = {
@@ -71,6 +62,7 @@ module.exports = {
         let errorWarning = '';
         let eventWarning = '';
         let channelWarning = '';
+        let roleWarning = '';
         let nonoScript = '';
         let okkeScript = '';
         let WARNINGFLAG = false;
@@ -84,7 +76,7 @@ module.exports = {
 
         // set search span
         const startDate = (optAlign == 'yes') ? getFirstDayOfWeek() : new Date();
-        const endDate = new Date(new Date().setDate(startDate.getDate() + optSpan * 7 - 1));
+        const endDate = new Date(new Date().setDate(startDate.getDate() + optSpan * 7));
 
         const vars = {
             'span': optSpan,
@@ -119,13 +111,13 @@ module.exports = {
         filterSubjects(optSubjects, validEvents);
 
         // check for invalid events
-        if (!optSubjects.length && invalidEvents.length != 0) {
+        if (!optSubjects.length && Object.keys(invalidEvents).length != 0) {
             eventWarning = makeEventScript(objectToList(invalidEvents));
             WARNINGFLAG = true;
         }
 
         // get subject channels
-        let { channels, missingChannels } = getSubjectChannels(validEvents, interaction);
+        let { guildChannels, missingChannels } = getSubjectChannels(validEvents, interaction);
 
         // check for missing channels
         if (missingChannels.length != 0) {
@@ -135,15 +127,24 @@ module.exports = {
             WARNINGFLAG = true;
         }
 
+        let { guildRoles, missingRoles } = getSubjectRoles(validEvents, interaction);
+        // check for missing roles
+        if (missingRoles.length != 0) {
+            missingRoles.forEach(subject => {
+                roleWarning += `${subject.replace('cs', 'CS ')}\n`;
+            });
+            WARNINGFLAG = true;
+        }
+
         // End program if warning flag is raised unless supressed
         if (optSupress == 'no' && WARNINGFLAG) {
-            const script = makeErrorScript(vars, errorWarning, eventWarning, channelWarning);
+            const script = makeErrorScript(vars, errorWarning, eventWarning, channelWarning, roleWarning);
             await interaction.editReply(script);
             return;
         }
 
         // Find the correct channel for each subject and send the message
-        const logs = await sendEvents(startDate, endDate, channels, validEvents);
+        const logs = await sendEvents(startDate, endDate, guildChannels, guildRoles, validEvents);
 
         // make script for logs
         if (logs['okke'].length != 0) {
@@ -154,10 +155,10 @@ module.exports = {
         }
 
         // make and send error script
-        const script = makeErrorScript(vars, errorWarning, eventWarning, channelWarning, okkeScript, nonoScript);
+        const script = makeErrorScript(vars, errorWarning, eventWarning, channelWarning, roleWarning, okkeScript, nonoScript);
         await interaction.editReply(script);
 
-        saveLogs(logs);
+        saveLogs(interaction, logs);
     }
 };
 
@@ -227,7 +228,7 @@ function filterSubjects(subjects, events) {
 
 
 function getSubjectChannels(events, interaction) {
-    const channels = new Object();
+    const guildChannels = new Object();
     const missingChannels = new Array();
     const eventSubjects = Object.keys(events);
 
@@ -236,31 +237,54 @@ function getSubjectChannels(events, interaction) {
 
         const name = channel.name.replaceAll(/[\s_-]/g, '');
         if (listOfSubjects.includes(name)) {
-            channels[name] = channel;
+            guildChannels[name] = channel;
         }
     });
 
     for (const subject of eventSubjects) {
-        const channel = channels[subject];
+        const channel = guildChannels[subject];
         if (!channel) {
             missingChannels.push(subject);
             delete events[subject];
         }
     };
 
-    return { channels, missingChannels };
+    return { guildChannels, missingChannels };
+}
+
+function getSubjectRoles(events, interaction) {
+    const guildRoles = new Object();
+    const missingRoles = new Array();
+    const eventSubjects = Object.keys(events);
+
+    interaction.guild.roles.cache.forEach((role) => {
+        const name = role.name.replaceAll(/[\s_-]/g, '');
+        if (listOfSubjects.includes(name)) {
+            guildRoles[name] = role;
+        }
+    });
+
+    for (const subject of eventSubjects) {
+        const role = guildRoles[subject];
+        if (!role) {
+            missingRoles.push(subject);
+            delete events[subject];
+        }
+    };
+    return { guildRoles, missingRoles };
 }
 
 
-function makeErrorScript(vars, errorWarning = '', eventWarning = '', channelWarning = '', okkeScript = '', nonoScript = '') {
+function makeErrorScript(vars, errorWarning = '', eventWarning = '', channelWarning = '', roleWarning = '', okkeScript = '', nonoScript = '') {
 
     const command = '```' + `Command: reqs [span] ${vars.span} week(s), [align] ${vars.align}, [supress] ${vars.supress}, [subjects] ${vars.subjects.length ? vars.subjects : 'all'}` + '```';
 
     const supressed = vars.supress == 'yes';
     if (eventWarning.length != 0) eventWarning = `[WARNING${supressed ? ' @Supress' : ''}] Unrecognized Events:\n` + eventWarning + '\n';
     if (channelWarning.length != 0) channelWarning = `[WARNING${supressed ? ' @Supress' : ''}] Missing Channels:\n` + channelWarning + '\n';
+    if (roleWarning.length != 0) roleWarning = `[WARNING${supressed ? ' @Supress' : ''}] Missing Roles:\n` + roleWarning + '\n';
 
-    let warnings = errorWarning + eventWarning + channelWarning;
+    let warnings = errorWarning + eventWarning + channelWarning + roleWarning;
     if (warnings.length != 0) warnings = '```' + warnings + '```';
 
     const date = `[Events from ${formatDate(vars.start)} to ${formatDate(vars.end)}]\n\n`;
@@ -274,10 +298,12 @@ function makeErrorScript(vars, errorWarning = '', eventWarning = '', channelWarn
 }
 
 
-async function sendEvents(startDate, endDate, channels, events) {
+
+async function sendEvents(startDate, endDate, guildChannels, guildRoles, events) {
     const logs = new Object({ 'okke': [], 'nono': [] });
 
     for (const subject in events) {
+
         let reqScript = new String();
         events[subject].forEach((req) => {
             reqScript = reqScript.concat(`📍 **${formatDate(new Date(req['start']['date']))}**  ${req['summary']}\n`);
@@ -286,11 +312,12 @@ async function sendEvents(startDate, endDate, channels, events) {
         const msg = messageScript
             .replace('[<start>]', formatDate(startDate))
             .replace('[<end>]', formatDate(endDate))
+            .replace('[<role>]', `<@&${guildRoles[subject].id}>`)
             .replaceAll('[<subject>]', subject.toUpperCase())
             .replace('[<requirements>]', reqScript);
 
         try {
-            const sent = await channels[subject].send(msg);
+            const sent = await guildChannels[subject].send(msg);
             console.log(`[LOGS] Event is sent to <${subject}> channel`);
             logs['okke'].push({ 'subject': subject, 'data': sent });
         } catch (error) {
@@ -303,7 +330,7 @@ async function sendEvents(startDate, endDate, channels, events) {
 };
 
 
-function saveLogs(logs) {
+async function saveLogs(interaction, logs) {
     let msg = '[x]' + new Date() + '\n';
     for (const log of logs['okke']) {
         const subject = log['subject'];
@@ -312,7 +339,13 @@ function saveLogs(logs) {
 
         msg += `${subject} ${channelId} ${messageId}\n`;
     }
-    fs.appendFileSync(path.join(__dirname, '../../data/history/922844835931643967.txt'), msg);
+    try {
+        fs.appendFileSync(path.join(__dirname, `../../data/history/${interaction.guildId}.txt`), msg);
+    } catch (error) {
+        console.log('[ERROR] Failed to update logs');
+        await interaction.followUp('[ERROR] Failed to update logs');
+    }
+
 }
 
 

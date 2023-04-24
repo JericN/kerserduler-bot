@@ -2,29 +2,7 @@ require('dotenv/config');
 const fs = require('fs');
 const path = require('path');
 
-const { google } = require('googleapis');
 const { ApplicationCommandOptionType } = require('discord.js');
-
-
-
-const deleteMessages = async (client, events) => {
-    const logs = new Object({ 'okke': [], 'nono': [] });
-    for (const event of events) {
-        const [subject, channelId, messageId] = event.split(' ');
-        const channel = client.channels.cache.get(channelId);
-        try {
-            const message = await channel.messages.fetch(messageId);
-            await message.delete();
-            logs['okke'].push(subject);
-            console.log(`[LOGS] Message in <${subject}> channel is deleted`);
-        } catch (error) {
-            logs['nono'].push(subject);
-            console.log(`[WARNING] Message in <${subject}> is not found`);
-        }
-    }
-
-    return logs;
-};
 
 module.exports = {
     deleted: false,
@@ -44,14 +22,23 @@ module.exports = {
     ],
 
     callback: async (client, interaction) => {
-        let hist = fs.readFileSync(path.join(__dirname, '../../data/history/922844835931643967.txt'), 'utf-8').split('[x]');
+        const filePath = `../../data/history/${interaction.guildId}.txt`;
+        try {
+            var hist = fs.readFileSync(path.join(__dirname, filePath), 'utf-8');
+        } catch (err) {
+            fs.closeSync(fs.openSync(path.join(__dirname, filePath), 'w'));
+            hist = fs.readFileSync(path.join(__dirname, filePath), 'utf-8');
+        }
+        hist = hist.split('[x]');
+
         const optPreview = interaction.options.get('action')?.value;
         lastEvents = hist.pop();
+        await interaction.deferReply();
 
         console.log(lastEvents);
         if (!lastEvents.length) {
             console.log('[ERROR] Recent logs are empty');
-            await interaction.reply('```[ERROR] Recent logs are empty```');
+            await interaction.editReply('```[ERROR] Recent logs are empty```');
             return;
         }
 
@@ -64,7 +51,7 @@ module.exports = {
                 const subject = event.split(' ').shift();
                 script += subject.replace('cs', 'CS ') + '\n';
             }
-            await interaction.reply('```' + script + '```');
+            await interaction.editReply('```' + script + '```');
             return;
         }
 
@@ -80,13 +67,37 @@ module.exports = {
             });
         }
 
-        await interaction.reply('```' + script + '```');
+        await interaction.editReply('```' + script + '```');
         const newHist = hist.join('[x]');
 
-        fs.writeFileSync(path.join(__dirname, '../../data/history/922844835931643967.txt'), newHist);
+        try {
+            fs.writeFileSync(path.join(__dirname, `../../data/history/${interaction.guildId}.txt`), newHist);
+        } catch (error) {
+            console.log('[ERROR] Failed to update logs');
+            await interaction.followUp('[ERROR] Failed to update logs');
+        }
+
     }
 };
 
+const deleteMessages = async (client, events) => {
+    const logs = new Object({ 'okke': [], 'nono': [] });
+    for (const event of events) {
+        const [subject, channelId, messageId] = event.split(' ');
+        const channel = client.channels.cache.get(channelId);
+        try {
+            const message = await channel.messages.fetch(messageId);
+            await message.delete();
+            logs['okke'].push(subject);
+            console.log(`[LOGS] Message in <${subject}> channel is deleted`);
+        } catch (error) {
+            logs['nono'].push(subject);
+            console.log(`[WARNING] Message in <${subject}> is not found`);
+        }
+    }
+
+    return logs;
+};
 
 function formatDate(date) {
     return date.toLocaleString('default', { month: 'short', day: 'numeric' });
