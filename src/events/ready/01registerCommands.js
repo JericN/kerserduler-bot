@@ -1,6 +1,6 @@
-const areCommandsDifferent = require('../../utils/areCommandsDifferent');
-const getApplicationCommands = require('../../utils/getApplicationCommands');
-const getLocalCommands = require('../../utils/getLocalCommands');
+const areCommandsDifferent = require('../../utils/discord/areCommandsDifferent');
+const getApplicationCommands = require('../../utils/discord/getApplicationCommands');
+const getLocalCommands = require('../../utils/discord/getLocalCommands');
 
 module.exports = async (client) => {
   try {

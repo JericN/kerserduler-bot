@@ -8,6 +8,11 @@ const getCalendarEvents = require('../../utils/google/getCalendarEvents.js');
 const listOfSubjects = fs.readFileSync(path.join(__dirname, '../../data/subjects.txt'), 'utf-8').split(/\r?\n/);
 const messageScript = fs.readFileSync(path.join(__dirname, '../../data/scripts/event_message.txt'), 'utf-8');
 
+Date.prototype.addDays = function (days) {
+    var date = new Date(this.valueOf());
+    date.setDate(date.getDate() + days);
+    return date;
+};
 
 module.exports = {
     deleted: false,
@@ -76,7 +81,7 @@ module.exports = {
 
         // set search span
         const startDate = (optAlign == 'yes') ? getFirstDayOfWeek() : new Date();
-        const endDate = new Date(new Date().setDate(startDate.getDate() + optSpan * 7));
+        const endDate = startDate.addDays(optSpan * 7 - 1);
 
         const vars = {
             'span': optSpan,
@@ -174,7 +179,7 @@ function formatDate(date) {
 function getFirstDayOfWeek() {
     const date = new Date();
     const day = date.getDay();
-    const diff = date.getDate() - day;
+    const diff = date.getDate() - day + 1;
 
     return new Date(date.setDate(diff));
 }
