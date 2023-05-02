@@ -3,13 +3,12 @@ const fs = require('fs');
 const path = require('path');
 
 const { ApplicationCommandOptionType } = require('discord.js');
+const { addDaysToDate, formatDate, getFirstDayOfWeek } = require('../../utils/function/date.js');
 const getCalendarEvents = require('../../utils/google/getCalendarEvents.js');
 
-Date.prototype.addDays = function (days) {
-    var date = new Date(this.valueOf());
-    date.setDate(date.getDate() + days);
-    return date;
-};
+
+
+
 
 module.exports = {
     deleted: false,
@@ -64,9 +63,7 @@ module.exports = {
 
         // set search span
         const startDate = (optAlign == 'yes') ? getFirstDayOfWeek() : new Date();
-        const endDate = startDate.addDays(optSpan * 7 - 1);
-        // const startDate = new Date(new Date().setDate(new Date().getDate() - 24 * 7 - 1));
-        // const endDate = new Date(new Date().setDate(new Date().getDate() - 20 * 7 - 1));
+        const endDate = addDaysToDate(startDate, optSpan * 7 - 1);
 
         // get calendar events
         try {
@@ -97,21 +94,6 @@ module.exports = {
 
 
 
-
-
-
-
-function formatDate(date) {
-    return date.toLocaleString('default', { month: 'short', day: 'numeric' });
-}
-
-
-function getFirstDayOfWeek() {
-    const date = new Date();
-    const day = date.getDay();
-    const diff = date.getDate() - day + 1;
-    return new Date(date.setDate(diff));
-}
 
 
 

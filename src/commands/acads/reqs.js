@@ -3,16 +3,13 @@ const fs = require('fs');
 const path = require('path');
 
 const { ApplicationCommandOptionType } = require('discord.js');
+const { addDaysToDate, formatDate, getFirstDayOfWeek } = require('../../utils/function/date.js');
 const getCalendarEvents = require('../../utils/google/getCalendarEvents.js');
 
 const listOfSubjects = fs.readFileSync(path.join(__dirname, '../../data/subjects.txt'), 'utf-8').split(/\r?\n/);
 const messageScript = fs.readFileSync(path.join(__dirname, '../../data/scripts/event_message.txt'), 'utf-8');
 
-Date.prototype.addDays = function (days) {
-    var date = new Date(this.valueOf());
-    date.setDate(date.getDate() + days);
-    return date;
-};
+
 
 module.exports = {
     deleted: false,
@@ -81,7 +78,7 @@ module.exports = {
 
         // set search span
         const startDate = (optAlign == 'yes') ? getFirstDayOfWeek() : new Date();
-        const endDate = startDate.addDays(optSpan * 7 - 1);
+        const endDate = addDaysToDate(startDate, optSpan * 7 - 1);
 
         const vars = {
             'span': optSpan,
@@ -121,10 +118,8 @@ module.exports = {
             WARNINGFLAG = true;
         }
 
-        // get subject channels
+        // get subject channels and check for missing channels
         let { guildChannels, missingChannels } = getSubjectChannels(validEvents, interaction);
-
-        // check for missing channels
         if (missingChannels.length != 0) {
             missingChannels.forEach(subject => {
                 channelWarning += `${subject.replace('cs', 'CS ')}\n`;
@@ -132,8 +127,8 @@ module.exports = {
             WARNINGFLAG = true;
         }
 
+        // get guild roles and check for missing roles
         let { guildRoles, missingRoles } = getSubjectRoles(validEvents, interaction);
-        // check for missing roles
         if (missingRoles.length != 0) {
             missingRoles.forEach(subject => {
                 roleWarning += `${subject.replace('cs', 'CS ')}\n`;
@@ -171,18 +166,12 @@ module.exports = {
 
 
 
-function formatDate(date) {
-    return date.toLocaleString('default', { month: 'short', day: 'numeric' });
-}
 
 
-function getFirstDayOfWeek() {
-    const date = new Date();
-    const day = date.getDay();
-    const diff = date.getDate() - day + 1;
 
-    return new Date(date.setDate(diff));
-}
+
+
+
 
 
 function makeEventScript(events, script = '') {
