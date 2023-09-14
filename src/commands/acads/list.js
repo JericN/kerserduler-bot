@@ -3,9 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 const { ApplicationCommandOptionType } = require('discord.js');
-const { addDaysToDate, formatDate, getFirstDayOfWeek } = require('../../utils/function/date.js');
 const getCalendarEvents = require('../../utils/google/getCalendarEvents.js');
-
+const { addDaysToDate, formatDate, getFirstDayOfWeek, objectToList, sortEventsByDate } = require('../../utils/function/functions.js');
 
 
 
@@ -93,24 +92,6 @@ module.exports = {
 
 
 
-
-
-
-
-function objectToList(object) {
-    array = new Array();
-    Object.values(object).forEach((events) => {
-        array.push(...events);
-    });
-    return array;
-}
-
-
-function sortEventsByDate(events) {
-    events.sort((a, b) => {
-        return new Date(a['start']['date']) - new Date(b['start']['date']);
-    });
-}
 
 
 function makeEventScript(events, script = '') {
