@@ -1,317 +1,320 @@
-
 const fs = require('fs');
 const path = require('path');
 
 const { ApplicationCommandOptionType } = require('discord.js');
-const getCalendarEvents = require('../../utils/google/getCalendarEvents.js');
-const {
-    addDaysToDate,
-    formatDate,
-    getFirstDayOfWeek,
-    objectToList,
-    makeEventListScript
-} = require('../../utils/function/functions.js');
-
+const { getCalendarEvents, separateEvents } = require('../../utils/googleFunctions.js');
+const { addDaysToDate, formatDate, getFirstDayOfWeek, makeEventListScript } = require('../../utils/generalFunctions.js');
 
 const listOfSubjects = fs.readFileSync(path.join(__dirname, '../../data/subjects.txt'), 'utf-8').split(/\r?\n/);
 const messageScript = fs.readFileSync(path.join(__dirname, '../../data/scripts/event_message.txt'), 'utf-8');
 
-
 module.exports = {
-    deleted: false,
-    name: "reqs",
-    description: "send list of requirements to their respective channels",
-    options: [
-        {
-            name: 'span',
-            description: 'Query search span',
-            type: ApplicationCommandOptionType.Number,
-            required: true,
-            choices: [
-                { name: '1 week', value: 1 },
-                { name: '2 weeks', value: 2 },
-                { name: '3 weeks', value: 3 },
-                { name: '4 weeks', value: 4 },
-            ]
-        },
-        {
-            name: 'align',
-            description: 'Align to first day of the week (sunday)',
-            type: ApplicationCommandOptionType.String,
-            required: false,
-            choices: [
-                { name: 'yes', value: 'yes' },
-                { name: 'no', value: 'no' },
-            ]
-        },
-        {
-            name: 'supress',
-            description: 'Force send valid events to channels while ignoring invalid subjects',
-            type: ApplicationCommandOptionType.String,
-            required: false,
-            choices: [
-                { name: 'yes', value: 'yes' },
-                { name: 'no', value: 'no' },
-            ]
-        },
-        {
-            name: 'subjects',
-            description: 'Subject(s) to query ex."21 33 132"',
-            type: ApplicationCommandOptionType.String,
-            required: false,
-        }
-    ],
+	deleted: false,
+	name: 'reqs',
+	description: 'send list of requirements to their respective channels',
+	options: [
+		{
+			name: 'span',
+			description: 'Search span',
+			type: ApplicationCommandOptionType.Number,
+			required: true,
+			choices: [
+				{ name: '1 week', value: 1 },
+				{ name: '2 weeks', value: 2 },
+				{ name: '3 weeks', value: 3 },
+				{ name: '4 weeks', value: 4 },
+			],
+		},
+		{
+			name: 'align',
+			description: 'Start with with first day of the week (sunday). [ default : true ]',
+			type: ApplicationCommandOptionType.Boolean,
+			required: false,
+			choices: [
+				{ name: 'yes', value: true },
+				{ name: 'no', value: false },
+			],
+			default: true,
+		},
+		{
+			name: 'force',
+			description: 'Force send valid events to channels while ignoring invalid subjects [default : false ]',
+			type: ApplicationCommandOptionType.Boolean,
+			required: false,
+			choices: [
+				{ name: 'yes', value: true },
+				{ name: 'no', value: false },
+			],
+			default: false,
+		},
+		{
+			name: 'subjects',
+			description: 'Subject(s) to query, example input: "21 33 132"',
+			type: ApplicationCommandOptionType.String,
+			required: false,
+			default: null,
+		},
+	],
+	allowedServerOnly: true,
 
+	callback: async (client, interaction) => {
+		await interaction.deferReply();
 
-    callback: async (client, interaction) => {
-        await interaction.deferReply();
+		const script = new Object({
+			errorWarning: '',
+			eventWarning: '',
+			channelWarning: '',
+			roleWarning: '',
+			nonoScript: '',
+			okkeScript: '',
+		});
 
-        let WARNINGFLAG = false;
-        const script = new Object({
-            'errorWarning': '',
-            'eventWarning': '',
-            'channelWarning': '',
-            'roleWarning': '',
-            'nonoScript': '',
-            'okkeScript': ''
-        });
+		// get command options and set search span
+		const opt = getOptionValues(interaction.options);
+		const dates = getSearchDates(opt.span, opt.align);
 
+		// input checking
+		try {
+			verifyInput(opt);
+		} catch (error) {
+			script.errorWarning = error.message;
+			await interaction.editReply(makeErrorScript(opt, dates, script));
+			return;
+		}
 
-        // get query values from command, all values are stored in data.
-        const data = getOptionsValues(interaction);
+		// get list of desired events from google calendar
+		try {
+			var calendarEvents = await getCalendarEvents(dates.start, dates.end);
+		} catch (error) {
+			script.errorWarning = `[ERROR] Calendar Request Failed`;
+			await interaction.editReply(makeErrorScript(opt, dates, script));
+			return;
+		}
 
-        // if specific subjects are given, check if they are valid
-        const invalidSubjects = getInvalidSubjectInput(data.subjects);
-        if (invalidSubjects.length != 0) {
-            script.errorWarning = `[ERROR] Invalid Subject(s) : ${invalidSubjects.join(', ')}`;
-            await interaction.editReply(makeErrorScript(data, script));
-            return;
-        }
+		// separate valid and invalid events
+		const { validEvents, invalidEvents } = separateEvents(calendarEvents);
 
-        // Get list of desired events from google calendar
-        try {
-            var { validEvents, invalidEvents } = await getCalendarEvents(data.startDate, data.endDate);
-        } catch (error) {
-            script.errorWarning = `[ERROR] Calendar Request Failed`;
-            await interaction.editReply(makeErrorScript(data, script));
-            return;
-        }
+		// apply options
+		const filteredEvents = filterValidEvents(validEvents, opt.subjects);
 
-        // filter and check for invalid events
-        filterSubjects(validEvents, data.subjects);
-        if (!data.subjects.length && Object.keys(invalidEvents).length != 0) {
-            script.eventWarning = makeEventListScript(objectToList(invalidEvents));
-            WARNINGFLAG = true;
-        }
+		// get corresponding subject channels and check for missing channels
+		const { guildChannels, missingChannels } = verifyChannels(filteredEvents, interaction);
 
-        // get corresponding subject channels and check for missing channels
-        let { guildChannels, missingChannels } = getSubjectChannels(validEvents, interaction);
-        if (missingChannels.length != 0) {
-            missingChannels.forEach((subject) => {
-                script.channelWarning += `${subject.replace('cs', 'CS ')}\n`;
-            });
-            WARNINGFLAG = true;
-        }
+		// get guild roles and check for missing roles
+		const { guildRoles, missingRoles } = verifyRoles(filteredEvents, interaction);
 
-        // get guild roles and check for missing roles
-        let { guildRoles, missingRoles } = getSubjectRoles(validEvents, interaction);
-        if (missingRoles.length != 0) {
-            missingRoles.forEach((subject) => {
-                script.roleWarning += `${subject.replace('cs', 'CS ')}\n`;
-            });
-            WARNINGFLAG = true;
-        }
+		// make warning script
+		const warningFlag = warningHandler(script, opt.subjects, invalidEvents, missingChannels, missingRoles);
 
-        // End program if warning flag is raised, continue if supressed
-        if (!data.supress && WARNINGFLAG) {
-            await interaction.editReply(makeErrorScript(data, script));
-            return;
-        }
+		// End program if warning flag is raised and force is true
+		if (!opt.force && warningFlag) {
+			await interaction.editReply(makeErrorScript(opt, dates, script));
+			return;
+		}
 
-        // Find the corresponding channel for each subject and send the message, then save the logs.
-        const { sentEvents, failedEvents } = await sendEvents(data, validEvents, guildChannels, guildRoles);
-        sentEvents.forEach((event) => { script.okkeScript += `${event['subject'].replace('cs', '[SENT] CS ')}\n`; });
-        failedEvents.forEach((event) => { script.nonoScript += `${event['subject'].replace('cs', '[FAILED] CS ')}\n`; });
+		// remove invalid events
+		const finalEvents = removeInvalidEvents(filteredEvents, missingChannels, missingRoles);
 
-        // make and send result script
-        await interaction.editReply(makeErrorScript(data, script));
+		// Find the corresponding channel for each subject, send the message and save the logs.
+		const { sentEvents, failedEvents } = await sendEvents(dates, finalEvents, guildChannels, guildRoles);
 
-        // save sent messages to history
-        await saveLogs(interaction, sentEvents);
-    }
+		// make and send result script
+		sentEvents.forEach((event) => {
+			script.okkeScript += `${event['subject'].replace('cs', '[SENT] CS ')}\n`;
+		});
+		failedEvents.forEach((event) => {
+			script.nonoScript += `${event['subject'].replace('cs', '[FAILED] CS ')}\n`;
+		});
+		await interaction.editReply(makeErrorScript(opt, dates, script));
+
+		// save sent messages to history
+		await saveLogs(interaction, sentEvents);
+	},
 };
 
+function getOptionValues(options) {
+	const optionValues = new Object();
+	module.exports.options.forEach((option) => {
+		optionValues[option.name] = options.get(option.name)?.value || option.default;
+	});
 
-
-
-
-
-
-
-
-
-function getOptionsValues(interaction) {
-    const data = new Object();
-    const opt = interaction.options;
-
-    data.span = opt.get('span').value;
-    data.align = (opt.get('align')?.value || 'yes') == 'yes' ? true : false;
-    data.supress = (opt.get('supress')?.value || 'no') == 'yes' ? true : false;
-    data.subjects = opt.get('subjects')?.value.split(' ').map(subj => { return 'cs' + subj; }) || [];
-    data.startDate = (data.align == 'yes') ? getFirstDayOfWeek() : new Date();
-    data.endDate = addDaysToDate(data.startDate, data.span * 7 - 1);
-
-    return data;
+	optionValues.subjects = optionValues.subjects?.split(' ').map((subj) => 'cs' + subj) || [];
+	return optionValues;
 }
 
-
-function getInvalidSubjectInput(subjects) {
-    const invalidSubjects = new Array();
-
-    for (const subject of subjects) {
-        if (!listOfSubjects.includes(subject)) {
-            invalidSubjects.push(subject);
-        }
-    }
-
-    return invalidSubjects;
+function getSearchDates(span, align) {
+	const start = align ? getFirstDayOfWeek() : new Date();
+	const end = addDaysToDate(start, span * 7 - 1);
+	return { start, end };
 }
 
+function verifyInput(opt) {
+	const invalidSubjectsInput = opt.subjects.filter((subject) => !listOfSubjects.includes(subject));
 
-function filterSubjects(events, subjects) {
-    if (subjects.length) {
-        for (const subject in events) {
-            if (!subjects.includes(subject)) {
-                delete events[subject];
-            }
-        }
-    }
+	if (invalidSubjectsInput.length) {
+		throw new Error(`[ERROR] Invalid Input (subjects) : ${invalidSubjectsInput.join(', ')}`);
+	}
 }
 
+function filterValidEvents(validEvents, subjects) {
+	if (!subjects.length) return validEvents;
 
-function getSubjectChannels(events, interaction) {
-    const guildChannels = new Object();
-    const missingChannels = new Array();
+	const filteredEvents = Object.keys(validEvents)
+		.filter((event) => subjects.includes(event))
+		.reduce((result, event) => {
+			result[event] = validEvents[event];
+			return result;
+		}, {});
 
-    interaction.guild.channels.cache.forEach((channel) => {
-        if (channel.type != '0') return;
-        const name = channel.name.replaceAll(/[\s_-]/g, '');
-        if (listOfSubjects.includes(name)) {
-            guildChannels[name] = channel;
-        }
-    });
-
-    for (const subject of Object.keys(events)) {
-        const channel = guildChannels[subject];
-        if (!channel) {
-            missingChannels.push(subject);
-            delete events[subject];
-        }
-    };
-
-    return { guildChannels, missingChannels };
+	return filteredEvents;
 }
 
+function verifyChannels(events, interaction) {
+	const guildChannels = {};
+	const missingChannels = [];
 
-function getSubjectRoles(events, interaction) {
-    const guildRoles = new Object();
-    const missingRoles = new Array();
+	interaction.guild.channels.cache
+		.filter((channel) => channel.type === 0)
+		.forEach((channel) => {
+			const name = channel.name.replace(/[\s_-]/g, '');
+			if (listOfSubjects.includes(name)) {
+				guildChannels[name] = channel;
+			}
+		});
 
-    interaction.guild.roles.cache.forEach((role) => {
-        const name = role.name.replaceAll(/[\s_-]/g, '');
-        if (listOfSubjects.includes(name)) {
-            guildRoles[name] = role;
-        }
-    });
+	for (const subject in events) {
+		if (!guildChannels[subject]) {
+			missingChannels.push(subject);
+		}
+	}
 
-    for (const subject of Object.keys(events)) {
-        const role = guildRoles[subject];
-        if (!role) {
-            missingRoles.push(subject);
-            delete events[subject];
-        }
-    };
-    return { guildRoles, missingRoles };
+	return { guildChannels, missingChannels };
 }
 
+function verifyRoles(events, interaction) {
+	const guildRoles = {};
+	const missingRoles = [];
 
-function makeErrorScript(data, script) {
+	interaction.guild.roles.cache.forEach((role) => {
+		const name = role.name.replace(/[\s_-]/g, '');
+		if (listOfSubjects.includes(name)) {
+			guildRoles[name] = role;
+		}
+	});
 
-    const command = '```' + `Command: reqs [span] ${data.span} week(s), [align] ${data.align}, [supress] ${data.supress}, [subjects] ${data.subjects.length ? data.subjects : 'all'}` + '```';
+	for (const subject in events) {
+		if (!guildRoles[subject]) {
+			missingRoles.push(subject);
+		}
+	}
 
-    if (script.eventWarning.length != 0) script.eventWarning = `[WARNING${data.supress ? ' @Supress' : ''}] Unrecognized Events:\n` + script.eventWarning + '\n';
-    if (script.channelWarning.length != 0) script.channelWarning = `[WARNING${data.supress ? ' @Supress' : ''}] Missing Channels:\n` + script.channelWarning + '\n';
-    if (script.roleWarning.length != 0) script.roleWarning = `[WARNING${data.supress ? ' @Supress' : ''}] Missing Roles:\n` + script.roleWarning + '\n';
-
-    let warnings = script.errorWarning + script.eventWarning + script.channelWarning + script.roleWarning;
-    if (warnings.length != 0) warnings = '```' + warnings + '```';
-
-    const date = `[Events from ${formatDate(data.startDate)} to ${formatDate(data.endDate)}]\n\n`;
-
-    let logs = script.okkeScript + script.nonoScript;
-    if (logs.length != 0) logs = '```' + date + logs + '```';
-
-    const consoleScript = command + warnings + logs;
-
-    return consoleScript;
+	return { guildRoles, missingRoles };
 }
 
+function warningHandler(script, subjects, invalidEvents, missingChannels, missingRoles) {
+	let warningFlag = false;
 
-async function sendEvents(data, events, guildChannels, guildRoles,) {
-    const sentEvents = new Array();
-    const failedEvents = new Array();
+	if (!subjects.length && invalidEvents.length) {
+		script.eventWarning = makeEventListScript(invalidEvents);
+		warningFlag = true;
+	}
 
-    for (const subject in events) {
+	if (missingChannels.length) {
+		script.channelWarning = missingChannels.map((subject) => subject.replace('cs', 'CS ')).join('\n');
+		warningFlag = true;
+	}
 
-        let reqScript = new String();
-        events[subject].forEach((req) => {
-            reqScript = reqScript.concat(`📍 **${formatDate(new Date(req['start']['date']))}**  ${req['summary']}\n`);
-        });
+	if (missingRoles.length) {
+		script.roleWarning = missingRoles.map((subject) => subject.replace('cs', 'CS ')).join('\n');
+		warningFlag = true;
+	}
+	return warningFlag;
+}
 
-        const msg = messageScript
-            .replace('[<start>]', formatDate(data.startDate))
-            .replace('[<end>]', formatDate(data.endDate))
-            .replace('[<role>]', `<@&${guildRoles[subject].id}>`)
-            .replaceAll('[<subject>]', subject.toUpperCase())
-            .replace('[<requirements>]', reqScript);
+function removeInvalidEvents(events, missingChannels, missingRoles) {
+	missingChannels.forEach((subject) => {
+		delete events[subject];
+	});
+	missingRoles.forEach((subject) => {
+		delete events[subject];
+	});
 
-        try {
-            var sent = await guildChannels[subject].send(msg);
-            sentEvents.push({ 'subject': subject, 'data': sent });
-        } catch (error) {
-            failedEvents.push({ 'subject': subject, 'data': sent });
-        }
-    }
+	return events;
+}
 
-    return { sentEvents, failedEvents };
-};
+async function sendEvents(dates, events, guildChannels, guildRoles) {
+	const sentEvents = [];
+	const failedEvents = [];
 
+	for (const subject in events) {
+		let reqsScript = '';
+		events[subject].forEach((reqs) => {
+			reqsScript += `📍 **${formatDate(new Date(reqs['start']['date']))}**  ${reqs['summary']}\n`;
+		});
+
+		const msg = messageScript
+			.replace('[<start>]', formatDate(dates.start))
+			.replace('[<end>]', formatDate(dates.end))
+			.replace('[<role>]', `<@&${guildRoles[subject].id}>`)
+			.replaceAll('[<subject>]', subject.toUpperCase())
+			.replace('[<requirements>]', reqsScript);
+
+		try {
+			var sent = await guildChannels[subject].send(msg);
+			sentEvents.push({ subject: subject, data: sent });
+		} catch (error) {
+			failedEvents.push({ subject: subject, data: sent });
+		}
+	}
+
+	return { sentEvents, failedEvents };
+}
+
+function makeErrorScript(opt, dates, script) {
+	const command =
+		'```' +
+		`Command: reqs [span] ${opt.span} week(s), [align] ${opt.align}, [force] ${opt.force}, [subjects] ${
+			opt.subjects.length ? opt.subjects.join(', ') : 'all'
+		}` +
+		'```';
+
+	if (script.eventWarning.length) {
+		script.eventWarning = `[WARNING${opt.force ? ' @Supress' : ''}] Unrecognized Events:\n` + script.eventWarning + '\n';
+	}
+
+	if (script.channelWarning.length) {
+		script.channelWarning = `[WARNING${opt.force ? ' @Supress' : ''}] Missing Channels:\n` + script.channelWarning + '\n';
+	}
+
+	if (script.roleWarning.length) {
+		script.roleWarning = `[WARNING${opt.force ? ' @Supress' : ''}] Missing Roles:\n` + script.roleWarning + '\n';
+	}
+
+	let warnings = script.errorWarning + script.eventWarning + script.channelWarning + script.roleWarning;
+	if (warnings.length != 0) warnings = '```' + warnings + '```';
+
+	const date = `[Events from ${formatDate(dates.start)} to ${formatDate(dates.end)}]\n\n`;
+
+	let logs = script.okkeScript + script.nonoScript;
+	if (logs.length != 0) logs = '```' + date + logs + '```';
+
+	const consoleScript = command + warnings + logs;
+
+	return consoleScript;
+}
 
 async function saveLogs(interaction, events) {
-    let msg = '[x]' + new Date() + '\n';
-    for (const event of events) {
-        const subject = events.subject;
-        const messageId = event.data.id;
-        const channelId = event.data.channel.id;
-        msg += `${subject} ${channelId} ${messageId}\n`;
-    }
+	let msg = `[x] ${new Date()}\n`;
+	for (const event of events) {
+		const subject = events.subject;
+		const messageId = event.data.id;
+		const channelId = event.data.channel.id;
+		msg += `${subject} ${channelId} ${messageId}\n`;
+	}
 
-    try {
-        fs.appendFileSync(path.join(__dirname, `../../data/history/${interaction.guildId}.txt`), msg);
-    } catch (error) {
-        await interaction.followUp('[ERROR] Failed to update logs');
-    }
+	try {
+		fs.appendFileSync(path.join(__dirname, `../../data/history/${interaction.guildId}.txt`), msg);
+	} catch (error) {
+		await interaction.followUp('[ERROR] Failed to update logs');
+	}
 }
-
-
-
-
-
-// const startDate = new Date(new Date().setDate(new Date().getDate() - 24 * 7 - 1));
-// const endDate = new Date(new Date().setDate(new Date().getDate() - 20 * 7 - 1));
-
-
-//  =================== DEBUG ===================
-// for (const event in validEvents)
-//     validEvents[event].forEach(subj => console.log(subj['summary']));
-//  =================== DEBUG ===================

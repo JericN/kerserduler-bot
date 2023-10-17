@@ -1,4 +1,6 @@
-const { ApplicationCommandOptionType } = require('discord.js');
+const {
+	ApplicationCommandOptionType,
+} = require('discord.js');
 
 module.exports = {
 	deleted: true,
@@ -14,11 +16,10 @@ module.exports = {
 			required: true,
 		},
 	],
-	developmentServerOnly: true,
 
 	callback: async (client, interaction) => {
 		const reply = await interaction.options.get('message').value;
 		interaction.reply({ content: 'Done :)', ephemeral: true });
 		await interaction.channel.send(reply);
-	},
-};
+	}
+};	

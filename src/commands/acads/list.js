@@ -3,127 +3,112 @@ const fs = require('fs');
 const path = require('path');
 
 const { ApplicationCommandOptionType } = require('discord.js');
-const getCalendarEvents = require('../../utils/google/getCalendarEvents.js');
-const { addDaysToDate, formatDate, getFirstDayOfWeek, objectToList, sortEventsByDate } = require('../../utils/function/functions.js');
-
-
-
+const { getCalendarEvents, separateEvents } = require('../../utils/googleFunctions.js');
+const { addDaysToDate, formatDate, getFirstDayOfWeek, objectToList, sortEventsByDate, makeEventListScript } = require('../../utils/generalFunctions.js');
 
 module.exports = {
-    deleted: false,
-    name: 'list',
-    description: 'get list of events',
-    options: [
-        {
-            name: 'span',
-            description: 'Search span',
-            type: ApplicationCommandOptionType.Number,
-            required: true,
-            choices: [
-                { name: '1 week', value: 1 },
-                { name: '2 weeks', value: 2 },
-                { name: '3 weeks', value: 3 },
-                { name: '4 weeks', value: 4 },
-            ]
-        },
-        {
-            name: 'align',
-            description: 'Align to first day of the week (sunday). [ default : yes ]',
-            type: ApplicationCommandOptionType.String,
-            required: false,
-            choices: [
-                { name: 'yes', value: 'yes' },
-                { name: 'no', value: 'no' },
-            ]
-        },
-        {
-            name: 'group',
-            description: 'Group result by subject or sorted. [ default : subject ]',
-            type: ApplicationCommandOptionType.String,
-            required: false,
-            choices: [
-                { name: 'subject', value: 'subject' },
-                { name: 'sorted', value: 'sorted' },
-            ]
-        }
-    ],
+	deleted: false,
+	name: 'list',
+	description: 'get list of events',
+	options: [
+		{
+			name: 'span',
+			description: 'Search span',
+			type: ApplicationCommandOptionType.Number,
+			required: true,
+			choices: [
+				{ name: '1 week', value: 1 },
+				{ name: '2 weeks', value: 2 },
+				{ name: '3 weeks', value: 3 },
+				{ name: '4 weeks', value: 4 },
+			],
+		},
+		{
+			name: 'align',
+			description: 'Start with with first day of the week (sunday). [ default : yes ]',
+			type: ApplicationCommandOptionType.String,
+			required: false,
+			choices: [
+				{ name: 'yes', value: 'yes' },
+				{ name: 'no', value: 'no' },
+			],
+			default: 'yes',
+		},
+		{
+			name: 'group',
+			description: 'Group result by subject or sorted. [ default : subject ]',
+			type: ApplicationCommandOptionType.String,
+			required: false,
+			choices: [
+				{ name: 'subject', value: 'subject' },
+				{ name: 'sorted', value: 'sorted' },
+			],
+			default: 'subject',
+		},
+	],
+	allowedServerOnly: true,
 
+	callback: async (client, interaction) => {
+		await interaction.deferReply();
 
-    callback: async (client, interaction) => {
-        await interaction.deferReply();
+		// get command options
+		const opt = getOptionValues(interaction.options);
 
-        // variables
-        var validEventScipt, invalidEventScipt;
+		// set search span
+		const dates = getSearchDates(opt.span, opt.align);
 
-        // get option values
-        const optSpan = interaction.options.get('span').value;
-        const optAlign = interaction.options.get('align')?.value || 'yes';
-        const optGroup = interaction.options.get('group')?.value || 'subject';
+		// get calendar events
+		try {
+			var calendarEvents = await getCalendarEvents(dates.start, dates.end);
+		} catch (error) {
+			console.log(`[ERROR] Calendar Request Failed : ${error}`);
+			interaction.editReply(`[ERROR] Calendar Request Failed : ${error}`);
+			return;
+		}
 
-        // set search span
-        const startDate = (optAlign == 'yes') ? getFirstDayOfWeek() : new Date();
-        const endDate = addDaysToDate(startDate, optSpan * 7 - 1);
+		// separate valid and invalid events
+		const { validEvents, invalidEvents } = separateEvents(calendarEvents);
+		const validEventList = objectToList(validEvents);
 
-        // get calendar events
-        try {
-            var { validEvents, invalidEvents } = await getCalendarEvents(startDate, endDate);
-        } catch (error) {
-            console.log(`[ERROR] Calendar Request Failed : ${error}`);
-            return;
-        }
+		// apply options
+		if (opt.group == 'sorted') sortEventsByDate(validEventList);
 
-        // parse valid events to script
-        const validEventList = objectToList(validEvents);
-        if (optGroup == 'sorted') sortEventsByDate(validEventList);
-        validEventScipt = makeEventScript(validEventList);
+		// make script
+		const validEventScipt = makeEventListScript(validEventList);
+		const invalidEventScipt = makeEventListScript(invalidEvents);
 
-        // parse invalid events to script
-        if (invalidEvents.length != 0) {
-            invalidEventScipt = makeEventScript(objectToList(invalidEvents));
-        }
-
-        // send message
-        const warningScript = editScript(optSpan, optAlign, optGroup, startDate, endDate, validEventScipt, invalidEventScipt);
-        await interaction.editReply(warningScript);
-    }
+		// send script
+		const script = editScript(opt, dates, validEventScipt, invalidEventScipt);
+		await interaction.editReply(script);
+	},
 };
 
-
-
-
-
-
-
-function makeEventScript(events, script = '') {
-    const makeScript = (event) => {
-        let eventDate = formatDate(new Date(event['start']['date']));
-        eventDate = eventDate.concat(' '.repeat(6 - eventDate.length));
-        return (`${eventDate} - ${event.summary} \n`);
-    };
-
-    events.forEach((event) => {
-        script = script.concat(makeScript(event));
-    });
-    return script;
+function getOptionValues(options) {
+	const optionValues = new Object();
+	module.exports.options.forEach((option) => {
+		optionValues[option.name] = options.get(option.name)?.value || option.default;
+	});
+	return optionValues;
 }
 
-
-function editScript(optSpan, optAlign, optGroup, startDate, endDate, validEventScipt, invalidEventScipt) {
-    const commandScript = `Command: list [span] ${optSpan} week(s), [align] ${optAlign}, [group] ${optGroup}`;
-    let warningScript = fs.readFileSync(path.join(__dirname, '../../data/scripts/list_warning.txt'), 'utf-8');
-    warningScript = warningScript
-        .replace('[<command>]', commandScript)
-        .replace('[<startDate>]', formatDate(startDate))
-        .replace('[<endDate>]', formatDate(endDate))
-        .replace('[<validEvents>]', validEventScipt);
-
-    if (invalidEventScipt.length != 0) invalidEventScipt = '[ Unrecognized Events Found! ]\n' + invalidEventScipt;
-    warningScript = warningScript.replace('[<invalidEvents>]', invalidEventScipt);
-
-    return warningScript;
+function getSearchDates(span, align) {
+	const start = align == 'yes' ? getFirstDayOfWeek() : new Date();
+	const end = addDaysToDate(start, span * 7 - 1);
+	return { start, end };
 }
 
+function editScript(opt, dates, validEventScipt, invalidEventScipt) {
+	const commandScript = `Command: list [span] ${opt.span} week(s), [align] ${opt.align}, [group] ${opt.group}`;
 
+	let warningScript = fs.readFileSync(path.join(__dirname, '../../data/scripts/list_warning.txt'), 'utf-8');
+	warningScript = warningScript
+		.replace('[<command>]', commandScript)
+		.replace('[<startDate>]', formatDate(dates.start))
+		.replace('[<endDate>]', formatDate(dates.end))
+		.replace('[<validEvents>]', validEventScipt);
 
-// const startDate = new Date(new Date().setDate(new Date().getDate() - 24 * 7 - 1));
-// const endDate = new Date(new Date().setDate(new Date().getDate() - 20 * 7 - 1));
+	if (invalidEventScipt.length != 0) invalidEventScipt = '[ Unrecognized Events Found! ]\n' + invalidEventScipt;
+	warningScript = warningScript.replace('[<invalidEvents>]', invalidEventScipt);
+
+	return warningScript;
+}
