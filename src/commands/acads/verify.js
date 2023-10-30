@@ -106,24 +106,24 @@ function makeScript(opt, dates, validEvents, invalidEvents, missingChannels, mis
 
 // ===================================================================================================
 
-function old(data, script) {
-	const command = '```' + `Command: reqs [span] ${data.span} week(s), [align] ${data.align}, [supress] ${data.supress}}` + '```';
+// function old(data, script) {
+// 	const command = '```' + `Command: reqs [span] ${data.span} week(s), [align] ${data.align}, [supress] ${data.supress}}` + '```';
 
-	if (script.eventWarning.length != 0)
-		script.eventWarning = `[WARNING${data.supress ? ' @Supress' : ''}] Unrecognized Events:\n` + script.eventWarning + '\n';
-	if (script.channelWarning.length != 0)
-		script.channelWarning = `[WARNING${data.supress ? ' @Supress' : ''}] Missing Channels:\n` + script.channelWarning + '\n';
-	if (script.roleWarning.length != 0) script.roleWarning = `[WARNING${data.supress ? ' @Supress' : ''}] Missing Roles:\n` + script.roleWarning + '\n';
+// 	if (script.eventWarning.length != 0)
+// 		script.eventWarning = `[WARNING${data.supress ? ' @Supress' : ''}] Unrecognized Events:\n` + script.eventWarning + '\n';
+// 	if (script.channelWarning.length != 0)
+// 		script.channelWarning = `[WARNING${data.supress ? ' @Supress' : ''}] Missing Channels:\n` + script.channelWarning + '\n';
+// 	if (script.roleWarning.length != 0) script.roleWarning = `[WARNING${data.supress ? ' @Supress' : ''}] Missing Roles:\n` + script.roleWarning + '\n';
 
-	let warnings = script.errorWarning + script.eventWarning + script.channelWarning + script.roleWarning;
-	if (warnings.length != 0) warnings = '```' + warnings + '```';
+// 	let warnings = script.errorWarning + script.eventWarning + script.channelWarning + script.roleWarning;
+// 	if (warnings.length != 0) warnings = '```' + warnings + '```';
 
-	const date = `[Events from ${formatDate(data.startDate)} to ${formatDate(data.endDate)}]\n\n`;
+// 	const date = `[Events from ${formatDate(data.startDate)} to ${formatDate(data.endDate)}]\n\n`;
 
-	let logs = script.okkeScript + script.nonoScript;
-	if (logs.length != 0) logs = '```' + date + logs + '```';
+// 	let logs = script.okkeScript + script.nonoScript;
+// 	if (logs.length != 0) logs = '```' + date + logs + '```';
 
-	const consoleScript = command + warnings + logs;
+// 	const consoleScript = command + warnings + logs;
 
-	return consoleScript;
-}
+// 	return consoleScript;
+// }
