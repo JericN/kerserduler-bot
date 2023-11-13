@@ -127,3 +127,4 @@ function makeScript(opt, dates, validEvents, invalidEvents, missingChannels, mis
 
 // 	return consoleScript;
 // }
+// 1
