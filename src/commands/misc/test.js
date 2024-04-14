@@ -1,17 +1,17 @@
 module.exports = {
-	deleted: true,
+    deleted: true,
 
-	name: 'test',
-	description: 'test',
-	developmentServerOnly: true,
+    name: 'test',
+    description: 'test',
+    developmentServerOnly: true,
 
-	callback: async (client, interaction) => {
-		await interaction.deferReply();
+    callback: async (client, interaction) => {
+        await interaction.deferReply();
 
-		interaction.guild.roles.cache.forEach((role) => {
-			console.log(role.name);
-		});
+        interaction.guild.roles.cache.forEach(role => {
+            console.log(role.name);
+        });
 
-		interaction.editReply(`done`);
-	},
+        interaction.editReply('done');
+    },
 };

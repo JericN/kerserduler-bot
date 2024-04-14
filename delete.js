@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const botId = '1047033806298816533';
 const serverId = '1097464336856911885';
