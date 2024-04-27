@@ -1,9 +1,9 @@
 require('dotenv').config();
 const botId = '1047033806298816533';
-const serverId = '1097464336856911885';
+const serverId = '922844835931643967';
 const { REST, Routes } = require('discord.js');
 
-const rest = new REST().setToken(process.env.TOKEN);
+const rest = new REST().setToken(process.env.DISCORD_TOKEN);
 
 // ...
 
