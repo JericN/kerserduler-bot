@@ -5,6 +5,7 @@
     "main": "src/index.js",
     "scripts": {
         "dev": "pnpm nodemon",
+        "test": "pnpm node ./tools/test.js",
         "lint": "pnpm eslint ./src",
         "format": "pnpm prettier --write ./src",
         "check": "pnpm run format && pnpm run lint"
@@ -16,7 +17,8 @@
     "author": "Jeric Narte",
     "license": "ISC",
     "dependencies": {
-        "discord.js": "^14.14.1"
+        "discord.js": "^14.14.1",
+        "googleapis": "^134.0.0"
     },
     "devDependencies": {
         "@eslint/js": "^9.1.1",
