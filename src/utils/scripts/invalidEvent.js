@@ -5,8 +5,8 @@ function formatScript(event) {
     return `${eventDate.padEnd(6)} - ${event.summary}`;
 }
 
-function makeEventListScript(events) {
+function generateInvalidEventScript(events) {
     return events.map((event) => formatScript(event)).join('\n');
 }
 
-module.exports = makeEventListScript;
+module.exports = generateInvalidEventScript;
