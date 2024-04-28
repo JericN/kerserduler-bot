@@ -19,10 +19,11 @@ function isValidSubjectCode(subject) {
  * @param {Array<Object>} events - An array of calendar event objects to validate.
  * @returns {{ validEvents: Object[], invalidEvents: Object[] }} An object containing valid and invalid events.
  **/
-function validateEvents(events) {
+function filterValidEvents(events) {
     const validEvents = [];
     const invalidEvents = [];
 
+    // Filter events based on subject code
     for (const event of events) {
         const subject = extractSubjectCode(event);
         const isValidSubject = isValidSubjectCode(subject);
@@ -37,4 +38,4 @@ function validateEvents(events) {
     return { validEvents, invalidEvents };
 }
 
-module.exports = validateEvents;
+module.exports = filterValidEvents;

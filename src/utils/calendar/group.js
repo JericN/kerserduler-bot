@@ -3,6 +3,7 @@ const { formatDate } = require('../functions');
 function groupBySubject(events) {
     const groupedEvents = {};
 
+    // Group events by subject
     events.forEach((event) => {
         // Check if event has a subject property
         if (!event.subject) throw new Error('Event missing subject property');
@@ -25,6 +26,7 @@ function groupBySubject(events) {
 function groupByDate(events) {
     const groupedEvents = {};
 
+    // Group events by date
     events.forEach((event) => {
         // Check if event has a start date property
         if (!event.start || !event.start.date) throw new Error('Event missing date property');
