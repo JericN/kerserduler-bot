@@ -1,0 +1,8 @@
+```
+[Command] list : [span] [<span>] week(s), [start] [<start>], [group] [<group>]
+``````asciidoc
+[ Events from [<startDate>] to [<endDate>] ]
+[<validEvents>]
+
+[<invalidEvents>]
+```
