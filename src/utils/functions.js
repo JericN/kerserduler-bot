@@ -15,7 +15,7 @@ function formatDate(date) {
 
 function getSunday() {
     const today = new Date();
-    const firstDay = today.getDate() - today.getDay() + 1 - 7;
+    const firstDay = today.getDate() - today.getDay() + 1;
     return new Date(today.setDate(firstDay));
 }
 
