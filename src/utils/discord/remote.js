@@ -1,4 +1,4 @@
-module.exports = async (client, guildId) => {
+async function getRemoteCommands(client, guildId) {
     let applicationCommands = [];
 
     if (guildId) {
@@ -10,4 +10,6 @@ module.exports = async (client, guildId) => {
 
     await applicationCommands.fetch();
     return applicationCommands;
-};
+}
+
+module.exports = getRemoteCommands;

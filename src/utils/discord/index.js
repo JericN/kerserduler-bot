@@ -1,4 +1,4 @@
-module.exports.areCommandsDifferent = require('./areCommandsDifferent');
-module.exports.getAllFiles = require('./getAllFiles');
-module.exports.getLocalCommands = require('./getLocalCommands');
-module.exports.getRemoteCommands = require('./getRemoteCommands');
+module.exports.areCommandsDifferent = require('./compare');
+module.exports.getAllFiles = require('./files');
+module.exports.getLocalCommands = require('./local');
+module.exports.getRemoteCommands = require('./remote');

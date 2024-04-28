@@ -1,7 +1,7 @@
 const path = require('path');
-const getAllFiles = require('./getAllFiles');
+const { getAllFiles } = require('./index');
 
-module.exports = (exceptions = []) => {
+function getLocalCommands(exceptions = []) {
     const localCommands = [];
 
     const commandCategories = getAllFiles(path.join(__dirname, '..', '..', 'commands'), true);
@@ -17,4 +17,6 @@ module.exports = (exceptions = []) => {
         }
     }
     return localCommands;
-};
+}
+
+module.exports = getLocalCommands;
