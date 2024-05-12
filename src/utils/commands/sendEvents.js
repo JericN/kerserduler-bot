@@ -2,7 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const { formatDate } = require('../functions');
 
-const messageScript = fs.readFileSync(path.join(__dirname, '../../data/scripts/event_message.txt'), 'utf-8');
+const messageScript = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'data', 'scripts', 'event_message.txt'),
+    'utf-8',
+);
 
 async function sendEventsToChannels(events, dates, threads, roles) {
     const successfulEvents = [];
