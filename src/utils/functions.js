@@ -13,13 +13,7 @@ function formatDate(date) {
     return date.toLocaleString('default', { month: 'short', day: 'numeric' });
 }
 
-function getSunday() {
-    const today = new Date();
-    const firstDay = today.getDate() - today.getDay() + 1;
-    return new Date(today.setDate(firstDay));
-}
-
-module.exports = { objectToList, addDaysToDate, formatDate, getSunday };
+module.exports = { objectToList, addDaysToDate, formatDate };
 
 // const { formatDate, sortEventsByDate } = require('../functions');
 
