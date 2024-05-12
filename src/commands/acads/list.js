@@ -26,14 +26,14 @@ const commandOptions = [
     },
     {
         name: 'start',
-        description: 'Start date of the search. [ default : sunday ]',
+        description: 'Start date of the search. [ default : monday ]',
         type: ApplicationCommandOptionType.String,
         required: false,
         choices: [
-            { name: 'sunday', value: 'sunday' },
+            { name: 'monday', value: 'monday' },
             { name: 'today', value: 'today' },
         ],
-        default: 'sunday',
+        default: 'monday',
     },
     {
         name: 'group',
@@ -77,7 +77,7 @@ async function commandCallback(client, interaction) {
     const groupedEvents = groupEvents(validEvents, options.group);
 
     // Generate the response script
-    const commandScript = generateCommandScript('list', commandOptions, options);
+    const commandScript = generateCommandScript('list', options, commandOptions);
     const dateScript = generateDateScript(date);
     const validScript = generateValidEventScript(groupedEvents);
     const invalidScript = generateInvalidEventScript(invalidEvents);
