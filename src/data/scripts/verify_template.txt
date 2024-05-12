@@ -1,9 +1,0 @@
-```
-[<command>]
-```
-```
-[ Checking Events from [<startDate>] to [<endDate>] ]
-[<validEvents>]
-
-[<invalidEvents>]
-```
