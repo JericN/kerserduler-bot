@@ -4,8 +4,8 @@ const { formatDate } = require('../functions');
 
 const messageScript = fs.readFileSync(path.join(__dirname, '../../data/scripts/event_message.txt'), 'utf-8');
 
-async function sendEvents(events, dates, threads, roles) {
-    const sentEvents = [];
+async function sendEventsToChannels(events, dates, threads, roles) {
+    const successfulEvents = [];
     const failedEvents = [];
 
     for (const subject in events) {
@@ -24,14 +24,13 @@ async function sendEvents(events, dates, threads, roles) {
         const data = events[subject];
         try {
             response = await threads[subject].send(msg);
-            sentEvents.push({ subject, data, response });
-            // eslint-disable-next-line no-unused-vars
-        } catch (e) {
+            successfulEvents.push({ subject, data, response });
+        } catch {
             failedEvents.push({ subject, data, response });
         }
     }
 
-    return { sentEvents, failedEvents };
+    return { successfulEvents, failedEvents };
 }
 
-module.exports = sendEvents;
+module.exports = sendEventsToChannels;

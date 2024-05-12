@@ -1,23 +1,23 @@
 const { ApplicationCommandOptionType } = require('discord.js');
+const { fetchGoogleCalendarEvents } = require('../../database/calendar');
 const { filterValidEvents, groupEvents } = require('../../utils/calendar');
-const { fetchCalendarEvents } = require('../../database/calendar');
 const {
-    makeSendWarningScript,
     generateCommandScript,
     generateDateScript,
     generateSendOutputScript,
+    generateSendWarningScript,
 } = require('../../utils/scripts');
 const {
     applySubjectFilter,
-    calculateSearchSpan,
-    checkMissingRoles,
-    checkMissingThreads,
-    extractCommandOptions,
-    verifyInputSubjects,
-    fetchChannelThreads,
-    fetchGuildRoles,
-    removeInvalidEvents,
-    sendEvents,
+    calculateSearchInterval,
+    extractUserOptions,
+    fetchActiveThreads,
+    fetchActiveRoles,
+    filterSendableEvents,
+    findMissingRoles,
+    findMissingThreads,
+    sendEventsToChannels,
+    validateInputSubjects,
 } = require('../../utils/commands');
 
 // Slash command options
@@ -66,72 +66,81 @@ const commandOptions = [
     },
 ];
 
-// Function to handle the command execution
-async function commandCallback(_, interaction) {
+// Asynchronously handles the execution of a command interaction
+async function handleCommandExecution(_, interaction) {
     // Defer replying to let the user know that the bot has received the interaction
     await interaction.deferReply();
 
     // Extract user options from the interaction
-    const options = extractCommandOptions(interaction, commandOptions);
+    const userOptions = extractUserOptions(interaction, commandOptions);
 
     // Determine the search interval based on the user-provided options
-    const date = calculateSearchSpan(options.span, options.start);
+    const searchInterval = calculateSearchInterval(userOptions.span, userOptions.start);
 
-    // Check if the user input subjects are valid
-    const invalidInput = verifyInputSubjects(options.subjects);
-    if (invalidInput.length) {
-        await interaction.editReply(`[ERROR] Invalid Input (subjects) : ${invalidInput.join(', ')}`);
+    // Validate the user input subjects
+    const invalidSubjects = validateInputSubjects(userOptions.subjects);
+    if (invalidSubjects.length) {
+        await interaction.editReply(`[ERROR] Invalid Input (subjects) : ${invalidSubjects.join(', ')}`);
         return;
     }
 
     // Fetch events from Google Calendar
-    let calendarEvents;
+    let fetchedEvents;
     try {
-        calendarEvents = await fetchCalendarEvents(date.start, date.end);
+        fetchedEvents = await fetchGoogleCalendarEvents(searchInterval.start, searchInterval.end);
     } catch {
         await interaction.editReply('[ERROR] Calendar Request Failed');
         return;
     }
 
     // Separate valid and invalid events
-    const { validEvents, invalidEvents } = filterValidEvents(calendarEvents);
+    const { validEvents, invalidEvents } = filterValidEvents(fetchedEvents);
 
     // Apply subject filter to valid events
-    const filteredValidEvents = applySubjectFilter(validEvents, options.subjects);
-    const validSubjects = [...new Set(filteredValidEvents.map((event) => event.subject))];
-    const invalidSubjects = invalidEvents.map((event) => event.summary);
+    const filteredValidEvents = applySubjectFilter(validEvents, userOptions.subjects);
+    const validEventSubjects = [...new Set(filteredValidEvents.map((event) => event.subject))];
+    const invalidEventSummaries = invalidEvents.map((event) => event.summary);
 
-    // Fetch and verify if threads exist
-    const threads = fetchChannelThreads('acads', interaction);
-    const missingThreads = checkMissingThreads(threads, validSubjects);
+    // Fetch and verify the existence of threads
+    const activeThreads = fetchActiveThreads('acads', interaction);
+    const missingThreads = findMissingThreads(activeThreads, validEventSubjects);
 
-    // Fetch and verify if roles exist
-    const roles = fetchGuildRoles(interaction);
-    const missingRoles = checkMissingRoles(roles, validSubjects);
+    // Fetch and verify the existence of roles
+    const activeRoles = fetchActiveRoles(interaction);
+    const missingRoles = findMissingRoles(activeRoles, validEventSubjects);
+
+    // Generate the command script and date script
+    const commandScript = generateCommandScript('send', userOptions, commandOptions);
+    const dateScript = generateDateScript(searchInterval);
 
     // End the program if force is not enabled and there are warnings
     const warningFlag = invalidEvents.length || missingThreads.length || missingRoles.length;
-    const commandScript = generateCommandScript('send', options, commandOptions);
-    const dateScript = generateDateScript(date);
-    if (!options.force && warningFlag) {
-        const warningScript = makeSendWarningScript(invalidSubjects, missingThreads, missingRoles);
+    if (!userOptions.force && warningFlag) {
+        const warningScript = generateSendWarningScript(invalidEventSummaries, missingThreads, missingRoles);
         await interaction.editReply(commandScript + dateScript + warningScript);
         return;
     }
 
     // Filter out events that are impossible to send
-    const finalEvents = removeInvalidEvents(filteredValidEvents, missingThreads, missingRoles);
+    const sendableEvents = filterSendableEvents(filteredValidEvents, missingThreads, missingRoles);
 
-    // Find the corresponding channel for each subject, send the message and save the logs.
-    const groupedEvents = groupEvents(finalEvents, 'subject');
-    const { sentEvents, failedEvents } = await sendEvents(groupedEvents, date, threads, roles);
+    // Group the sendable events by subject
+    const groupedEvents = groupEvents(sendableEvents, 'subject');
+
+    // Send the grouped events
+    const { successfulEvents, failedEvents } = await sendEventsToChannels(
+        groupedEvents,
+        searchInterval,
+        activeThreads,
+        activeRoles,
+    );
 
     // Generate the output script
-    const outputScript = generateSendOutputScript(sentEvents, failedEvents);
-    const resposeScript = commandScript + dateScript + outputScript;
+    const outputScript = generateSendOutputScript(successfulEvents, failedEvents);
+    const responseScript = commandScript + dateScript + outputScript;
 
     // Send the output script
-    await interaction.editReply(resposeScript);
+    await interaction.editReply(responseScript);
 }
 
 module.exports = {
@@ -142,5 +151,5 @@ module.exports = {
     name: 'send',
     description: 'send list of requirements to their respective channels',
     options: commandOptions,
-    callback: commandCallback,
+    callback: handleCommandExecution,
 };

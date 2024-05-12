@@ -14,7 +14,7 @@ function formatSubject(subjects) {
  * @param {Object[]} options - Array of option objects.
  * @returns {Object} - Extracted and formatted option values.
  */
-function extractCommandOptions(interaction, options) {
+function extractUserOptions(interaction, options) {
     const optionValues = {};
     const input = interaction.options;
 
@@ -34,4 +34,4 @@ function extractCommandOptions(interaction, options) {
     return optionValues;
 }
 
-module.exports = extractCommandOptions;
+module.exports = extractUserOptions;

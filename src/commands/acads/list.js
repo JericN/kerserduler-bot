@@ -1,13 +1,13 @@
 const { ApplicationCommandOptionType } = require('discord.js');
-const { groupEvents, filterValidEvents } = require('../../utils/calendar');
-const { extractCommandOptions, calculateSearchSpan } = require('../../utils/commands');
+const { fetchGoogleCalendarEvents } = require('../../database/calendar');
+const { filterValidEvents, groupEvents } = require('../../utils/calendar');
+const { calculateSearchInterval, extractUserOptions } = require('../../utils/commands');
 const {
     generateCommandScript,
     generateDateScript,
-    generateValidEventScript,
     generateInvalidEventScript,
+    generateValidEventScript,
 } = require('../../utils/scripts');
-const { fetchCalendarEvents } = require('../../database/calendar');
 
 // Slash command options
 const commandOptions = [
@@ -54,18 +54,17 @@ async function commandCallback(client, interaction) {
     await interaction.deferReply();
 
     // Extract user options from the interaction
-    const options = extractCommandOptions(interaction, commandOptions);
+    const options = extractUserOptions(interaction, commandOptions);
 
     // Determine the search interval based on the user-provided options
-    const date = calculateSearchSpan(options.span, options.start);
+    const date = calculateSearchInterval(options.span, options.start);
 
     // Fetch events from Google Calendar
     let calendarEvents;
     try {
-        calendarEvents = await fetchCalendarEvents(date.start, date.end);
-    } catch (error) {
+        calendarEvents = await fetchGoogleCalendarEvents(date.start, date.end);
+    } catch {
         // If there's an error, inform the user and exit
-        console.error(`🟥 Calendar Request Failed : ${error}`);
         await interaction.editReply('[ERROR] Calendar Request Failed');
         return;
     }

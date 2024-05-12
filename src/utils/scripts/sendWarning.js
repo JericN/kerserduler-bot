@@ -2,7 +2,7 @@ function wrap(text) {
     return '```asciidoc\n' + text + '\n```';
 }
 
-function makeSendWarningScript(invalidEvents, missingThreads, missingRoles) {
+function generateSendWarningScript(invalidEvents, missingThreads, missingRoles) {
     const script = {
         invalidEvents: '',
         missingThreads: '',
@@ -22,4 +22,4 @@ function makeSendWarningScript(invalidEvents, missingThreads, missingRoles) {
     return warningScript;
 }
 
-module.exports = makeSendWarningScript;
+module.exports = generateSendWarningScript;

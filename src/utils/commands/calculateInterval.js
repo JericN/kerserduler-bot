@@ -6,7 +6,7 @@ function getMonday() {
     return new Date(today.setDate(firstDay));
 }
 
-function calculateSearchSpan(span, align) {
+function calculateSearchInterval(span, align) {
     const start = align == 'monday' ? getMonday() : new Date();
     start.setHours(0, 0, 0, 0);
     const end = addDaysToDate(start, span * 7 - 1);
@@ -14,4 +14,4 @@ function calculateSearchSpan(span, align) {
     return { start, end };
 }
 
-module.exports = calculateSearchSpan;
+module.exports = calculateSearchInterval;

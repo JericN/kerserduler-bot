@@ -14,7 +14,7 @@ function getAuth() {
  * @param {Date} endDate - The end date of the time range.
  * @returns {Promise<Object[]>} An array of calendar event objects.
  */
-async function fetchCalendarEvents(startDate, endDate) {
+async function fetchGoogleCalendarEvents(startDate, endDate) {
     // Get authentication credentials
     const auth = getAuth();
 
@@ -35,4 +35,4 @@ async function fetchCalendarEvents(startDate, endDate) {
     return response.data.items;
 }
 
-module.exports = { fetchCalendarEvents };
+module.exports = { fetchGoogleCalendarEvents };
