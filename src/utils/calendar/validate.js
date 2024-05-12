@@ -6,8 +6,12 @@ const listOfSubjects = fs
     .split(/\r?\n/);
 
 function extractSubjectCode(event) {
-    const subjectMatch = event.summary.match(/cs[ -_]*\d+/i);
-    return subjectMatch?.[0]?.replace(/[^a-z0-9]/gi, '').toLowerCase();
+    const subjectMatch = event.summary.match(/\bCS?\s*[-_]?\s*\d{2,3}\b/i);
+    if (subjectMatch) {
+        const subjectCode = subjectMatch[0].toLowerCase();
+        return subjectCode.replace(/[^a-z0-9]/g, '');
+    }
+    return null;
 }
 
 function isValidSubjectCode(subject) {
