@@ -18,8 +18,11 @@ function generateCommandScript(command, userOptions, commandOptions) {
     }
 
     // Generate the command script
-    const optionScript = Object.entries(options).map(([name, value]) => `[${name}] ${value}`);
-    const script = `[Command] ${command} : ${optionScript.join(', ')}`;
+    let optionScript = Object.entries(options)
+        .map(([name, value]) => `[${name}] ${value}`)
+        .join(', ');
+    if (optionScript.length === 0) optionScript = 'None';
+    const script = `[Command] ${command} : ${optionScript}`;
 
     // Return the formatted script
     return '```' + script + '```';
