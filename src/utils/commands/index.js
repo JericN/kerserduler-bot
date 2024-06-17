@@ -1,0 +1,10 @@
+module.exports.applySubjectFilter = require('./subjectFilter');
+module.exports.calculateSearchInterval = require('./calculateInterval');
+module.exports.extractUserOptions = require('./extractOptions');
+module.exports.fetchActiveRoles = require('./serverRoles');
+module.exports.fetchActiveThreads = require('./serverThreads');
+module.exports.filterSendableEvents = require('./filterSendableEvents');
+module.exports.findMissingRoles = require('./missingRoles');
+module.exports.findMissingThreads = require('./missingThreads');
+module.exports.sendEventsToChannels = require('./sendEvents');
+module.exports.validateInputSubjects = require('./validateSubjects');

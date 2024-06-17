@@ -1,19 +1,19 @@
 const path = require('path');
-const { getAllFiles } = require('../utils/discord');
+const getAllFiles = require('../utils/discord/getAllFiles');
 
-module.exports = (client) => {
+module.exports = client => {
     const eventFolders = getAllFiles(path.join(__dirname, '..', 'events'), true);
 
     for (const eventFolder of eventFolders) {
-        const eventFiles = getAllFiles(eventFolder);
-        eventFiles.sort((a, b) => a.localeCompare(b));
+        let eventFiles = getAllFiles(eventFolder);
+        eventFiles = eventFiles.sort();
 
         const eventName = eventFolder.replace(/\\/g, '/').split('/').pop();
 
-        client.on(eventName, async (args) => {
+        client.on(eventName, async arg => {
             for (const eventFile of eventFiles) {
                 const eventFunction = require(eventFile);
-                await eventFunction(client, args);
+                await eventFunction(client, arg);
             }
         });
     }

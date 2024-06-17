@@ -1,26 +1,32 @@
 {
-  "name": "acad_bot",
-  "version": "1.0.0",
-  "description": "UP CURSOR Acad Bot",
-  "main": "src/index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/index.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/JericNarte/acad_bot.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/JericNarte/acad_bot/issues"
-  },
-  "homepage": "https://github.com/JericNarte/acad_bot#readme",
-  "dependencies": {
-    "discord.js": "^14.9.0",
-    "dotenv": "^16.0.3",
-    "googleapis": "^114.0.0"
-  }
+    "name": "skoduler",
+    "version": "0.2.0",
+    "description": "Discord bot for deadline management",
+    "main": "src/index.js",
+    "scripts": {
+        "dev": "pnpm nodemon",
+        "test": "pnpm node ./tools/test.js",
+        "lint": "pnpm eslint ./src",
+        "format": "pnpm prettier --write ./src",
+        "check": "pnpm run format && pnpm run lint"
+    },
+    "keywords": [
+        "discord",
+        "bot"
+    ],
+    "author": "Jeric Narte",
+    "license": "ISC",
+    "dependencies": {
+        "discord.js": "^14.15.3",
+        "googleapis": "^134.0.0"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.5.0",
+        "dotenv": "^16.4.5",
+        "eslint": "^9.5.0",
+        "eslint-config-prettier": "^9.1.0",
+        "globals": "^15.5.0",
+        "nodemon": "^3.1.3",
+        "prettier": "^3.3.2"
+    }
 }
