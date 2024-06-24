@@ -1,2 +1,2 @@
-module.exports.groupEvents = require('./group');
+module.exports.groupEvents = require('./groupEvents');
 module.exports.filterValidEvents = require('./validate');
