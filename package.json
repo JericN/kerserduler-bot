@@ -1,10 +1,11 @@
 {
     "name": "skoduler",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Discord bot for deadline management",
     "main": "src/index.js",
     "scripts": {
-        "dev": "pnpm nodemon",
+        "dev": "pnpm node ./src/index.js",
+        "livedev": "pnpm nodemon",
         "test": "pnpm node ./tools/test.js",
         "lint": "pnpm eslint ./src",
         "format": "pnpm prettier --write ./src",
@@ -25,8 +26,9 @@
         "dotenv": "^16.4.5",
         "eslint": "^9.5.0",
         "eslint-config-prettier": "^9.1.0",
-        "globals": "^15.5.0",
-        "nodemon": "^3.1.3",
-        "prettier": "^3.3.2"
+        "globals": "^15.6.0",
+        "nodemon": "^3.1.4",
+        "prettier": "^3.3.2",
+        "zod": "^3.23.8"
     }
 }
