@@ -14,8 +14,8 @@ function areOptionsDifferent(existingOptions, localOptions) {
 
         if (!existingOption) return true;
 
-        const { LDescription, LType, LRequired, LChoices } = localOption;
-        const { EDescription, EType, ERequired, EChoices } = existingOption;
+        const { description: LDescription, type: LType, required: LRequired, choices: LChoices } = localOption;
+        const { description: EDescription, type: EType, required: ERequired, choices: EChoices } = existingOption;
 
         if (LDescription !== EDescription) return true;
         if (LType !== EType) return true;

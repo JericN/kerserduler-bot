@@ -48,14 +48,14 @@ const commandOptions = [
     },
     {
         name: 'force',
-        description: 'Force send valid events to channels while ignoring invalid subjects [default : false ]',
-        type: ApplicationCommandOptionType.Boolean,
+        description: 'Send valid events while ignoring invalid subjects [default : false ]',
+        type: ApplicationCommandOptionType.Number,
         required: false,
         choices: [
-            { name: 'yes', value: true },
-            { name: 'no', value: false },
+            { name: 'yes', value: 1 },
+            { name: 'no', value: 0 },
         ],
-        default: false,
+        default: 0,
     },
     {
         name: 'subjects',
