@@ -1,6 +1,8 @@
 const { google } = require('googleapis');
 const path = require('path');
+const { TransformEvents } = require('../utils/schema/types');
 
+// FIXME: secure the keyFile
 function getAuth() {
     return new google.auth.GoogleAuth({
         keyFile: path.join(__dirname, '..', '..', 'googlekey.json'),
@@ -8,17 +10,8 @@ function getAuth() {
     });
 }
 
-/**
- * Retrieves calendar events within a specified time range.
- * @param {Date} startDate - The start date of the time range.
- * @param {Date} endDate - The end date of the time range.
- * @returns {Promise<Object[]>} An array of calendar event objects.
- */
 async function fetchGoogleCalendarEvents(startDate, endDate) {
-    // Get authentication credentials
     const auth = getAuth();
-
-    // Create a calendar API instance
     const calendar = google.calendar({ version: 'v3', auth });
 
     // Retrieve events from the calendar
@@ -32,7 +25,9 @@ async function fetchGoogleCalendarEvents(startDate, endDate) {
     });
 
     // Extract and return the events from the response data
-    return response.data.items;
+    const temp = TransformEvents.safeParse(response.data.items);
+    if (!temp.success) throw new Error('Failed to parse events');
+    return temp.data;
 }
 
 module.exports = { fetchGoogleCalendarEvents };

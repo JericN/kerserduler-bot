@@ -9,6 +9,8 @@ const {
     generateValidEventScript,
 } = require('../../utils/scripts');
 
+const { ListOptions } = require('../../utils/schema/types');
+
 // Slash command options
 const commandOptions = [
     {
@@ -54,7 +56,8 @@ async function commandCallback(client, interaction) {
     await interaction.deferReply();
 
     // Extract user options from the interaction
-    const options = extractUserOptions(interaction, commandOptions);
+    const userOptions = extractUserOptions(interaction, commandOptions);
+    const options = ListOptions.parse(userOptions);
 
     // Determine the search interval based on the user-provided options
     const date = calculateSearchInterval(options.span, options.start);

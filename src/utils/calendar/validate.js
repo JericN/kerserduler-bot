@@ -1,10 +1,13 @@
 const fs = require('fs');
 const path = require('path');
+const { AcadEvents } = require('../schema/types');
 
 const listOfSubjects = fs
     .readFileSync(path.join(__dirname, '..', '..', 'data', 'subjects.txt'), 'utf-8')
     .split(/\r?\n/);
 
+// FIXME: Add support for non-CS subjects
+// It would be better if we have agreed on a standard format for event summaries
 function extractSubjectCode(event) {
     const subjectMatch = event.summary.match(/\bCS?\s*[-_]?\s*\d{2,3}\b/i);
     if (subjectMatch) {
@@ -18,11 +21,6 @@ function isValidSubjectCode(subject) {
     return subject && listOfSubjects.includes(subject);
 }
 
-/**
- * Validates calendar events based on subjects codes.
- * @param {Array<Object>} events - An array of calendar event objects to validate.
- * @returns {{ validEvents: Object[], invalidEvents: Object[] }} An object containing valid and invalid events.
- **/
 function filterValidEvents(events) {
     const validEvents = [];
     const invalidEvents = [];
