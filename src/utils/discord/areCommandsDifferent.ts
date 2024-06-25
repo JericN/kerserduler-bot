@@ -27,8 +27,7 @@ function areOptionsDifferent(existingOptions, localOptions) {
     return false;
 }
 
-// TODO: verify the logic
-function areCommandsDifferent(existingCommand, localCommand) {
+export function areCommandsDifferent(existingCommand, localCommand) {
     if (existingCommand.description !== localCommand.description) return true;
     if (existingCommand.options?.length !== (localCommand.options?.length || 0)) return true;
     if (areOptionsDifferent(existingCommand.options, localCommand.options || [])) return true;
@@ -36,4 +35,3 @@ function areCommandsDifferent(existingCommand, localCommand) {
     return false;
 }
 
-module.exports = areCommandsDifferent;

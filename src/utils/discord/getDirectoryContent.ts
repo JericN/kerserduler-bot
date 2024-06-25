@@ -1,8 +1,8 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
-function getAllFiles(directory, foldersOnly) {
-    const fileNames = [];
+export function getDirectoryContent(directory: string, foldersOnly = false): string[] {
+    const fileNames: string[] = [];
 
     const files = fs.readdirSync(directory, { withFileTypes: true });
 
@@ -15,5 +15,3 @@ function getAllFiles(directory, foldersOnly) {
 
     return fileNames;
 }
-
-module.exports = getAllFiles;
