@@ -5,8 +5,6 @@ const subjectList = fs
     .split(/\r?\n/)
     .filter((subject) => subject.length > 0);
 
-function validateInputSubjects(subjects) {
+export function validateInputSubjects(subjects) {
     return subjects.filter((subject) => !subjectList.includes(subject));
 }
-
-module.exports = validateInputSubjects;

@@ -1,4 +1,4 @@
-function fetchActiveRoles(interaction) {
+export function fetchActiveRoles(interaction) {
     const roles = {};
 
     interaction.guild.roles.cache.forEach((channel) => {
@@ -8,5 +8,3 @@ function fetchActiveRoles(interaction) {
 
     return roles;
 }
-
-module.exports = fetchActiveRoles;

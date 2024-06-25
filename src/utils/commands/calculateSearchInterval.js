@@ -6,12 +6,10 @@ function getMonday() {
     return new Date(today.setDate(firstDay));
 }
 
-function calculateSearchInterval(span, align) {
+export function calculateSearchInterval(span, align) {
     const start = align == 'monday' ? getMonday() : new Date();
     start.setHours(0, 0, 0, 0);
     const end = addDaysToDate(start, span * 7 - 1);
     end.setHours(23, 59, 59, 999);
     return { start, end };
 }
-
-module.exports = calculateSearchInterval;

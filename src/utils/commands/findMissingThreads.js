@@ -1,4 +1,4 @@
-function findMissingThreads(threads, listOfSubjects) {
+export function findMissingThreads(threads, listOfSubjects) {
     const listOfThreads = Object.keys(threads);
     const missingThreads = [];
 
@@ -10,5 +10,3 @@ function findMissingThreads(threads, listOfSubjects) {
 
     return missingThreads;
 }
-
-module.exports = findMissingThreads;

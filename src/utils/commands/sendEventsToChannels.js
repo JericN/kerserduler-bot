@@ -7,7 +7,7 @@ const messageScript = fs.readFileSync(
     'utf-8',
 );
 
-async function sendEventsToChannels(events, dates, threads, roles) {
+export async function sendEventsToChannels(events, dates, threads, roles) {
     const successfulEvents = [];
     const failedEvents = [];
 
@@ -35,5 +35,3 @@ async function sendEventsToChannels(events, dates, threads, roles) {
 
     return { successfulEvents, failedEvents };
 }
-
-module.exports = sendEventsToChannels;

@@ -1,4 +1,4 @@
-function fetchActiveThreads(channelName, interaction) {
+export function fetchActiveThreads(channelName, interaction) {
     const guildChannels = interaction.guild.channels.cache;
     const channel = guildChannels.find((ch) => ch.type === 0 && ch.name === channelName);
 
@@ -9,5 +9,3 @@ function fetchActiveThreads(channelName, interaction) {
     });
     return threads;
 }
-
-module.exports = fetchActiveThreads;

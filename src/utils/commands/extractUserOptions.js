@@ -3,7 +3,7 @@ function formatSubject(subjects) {
     return subjects.split(' ').map((s) => s.toLowerCase());
 }
 
-function extractUserOptions(interaction, options) {
+export function extractUserOptions(interaction, options) {
     const optionValues = {};
     const input = interaction.options;
 
@@ -22,5 +22,3 @@ function extractUserOptions(interaction, options) {
 
     return optionValues;
 }
-
-module.exports = extractUserOptions;

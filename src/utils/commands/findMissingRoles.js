@@ -1,4 +1,4 @@
-function findMissingRoles(roles, listOfSubjects) {
+export function findMissingRoles(roles, listOfSubjects) {
     const listOfRoles = Object.keys(roles);
     const missingRoles = [];
 
@@ -10,5 +10,3 @@ function findMissingRoles(roles, listOfSubjects) {
 
     return missingRoles;
 }
-
-module.exports = findMissingRoles;

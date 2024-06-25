@@ -1,4 +1,4 @@
-function filterSendableEvents(events, missingThreads, missingRoles) {
+export function filterSendableEvents(events, missingThreads, missingRoles) {
     const filteredEvents = [];
     for (const event of events) {
         if (missingThreads.includes(event['subject'])) {
@@ -11,5 +11,3 @@ function filterSendableEvents(events, missingThreads, missingRoles) {
     }
     return filteredEvents;
 }
-
-module.exports = filterSendableEvents;
