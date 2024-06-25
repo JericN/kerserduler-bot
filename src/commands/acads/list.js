@@ -1,6 +1,6 @@
 const { ApplicationCommandOptionType } = require('discord.js');
 const { fetchGoogleCalendarEvents } = require('../../database/calendar');
-const { filterValidEvents, groupEvents } = require('../../utils/calendar');
+const { filterEvents, groupEvents } = require('../../utils/calendar');
 const { calculateSearchInterval, extractUserOptions } = require('../../utils/commands');
 const {
     generateCommandScript,
@@ -73,7 +73,7 @@ async function commandCallback(client, interaction) {
     }
 
     // Separate valid and invalid events
-    const { validEvents, invalidEvents } = filterValidEvents(calendarEvents);
+    const { validEvents, invalidEvents } = filterEvents(calendarEvents);
 
     // Apply grouping to valid events
     const groupedEvents = groupEvents(validEvents, options.group);

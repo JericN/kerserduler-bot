@@ -1,6 +1,6 @@
 const { ApplicationCommandOptionType } = require('discord.js');
 const { fetchGoogleCalendarEvents } = require('../../database/calendar');
-const { filterValidEvents, groupEvents } = require('../../utils/calendar');
+const { filterEvents, groupEvents } = require('../../utils/calendar');
 const {
     generateCommandScript,
     generateDateScript,
@@ -94,7 +94,7 @@ async function commandCallback(_, interaction) {
     }
 
     // Separate valid and invalid events
-    const { validEvents, invalidEvents } = filterValidEvents(fetchedEvents);
+    const { validEvents, invalidEvents } = filterEvents(fetchedEvents);
 
     // Apply subject filter to valid events
     const filteredValidEvents = applySubjectFilter(validEvents, userOptions.subjects);

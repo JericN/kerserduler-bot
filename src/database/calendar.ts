@@ -1,6 +1,6 @@
 import { google, calendar_v3 } from 'googleapis';
 import path from 'path';
-import { AcadEvents } from '../utils/types/types';
+import { AcadEvent } from '../utils/types/types';
 
 // FIXME: secure the keyFile
 function getAuth() {
@@ -10,8 +10,8 @@ function getAuth() {
     });
 }
 
-function filterFields(data: calendar_v3.Schema$Event[] | undefined): AcadEvents {
-    if (!data) return AcadEvents.parse([]);
+function filterFields(data: calendar_v3.Schema$Event[] | undefined): AcadEvent[] {
+    if (!data) return [] as AcadEvent[];
     const res = data.map((event) => {
         return {
             id: event.id!,
@@ -22,7 +22,7 @@ function filterFields(data: calendar_v3.Schema$Event[] | undefined): AcadEvents 
         };
     });
 
-    return AcadEvents.parse(res);
+    return res.map((event) => AcadEvent.parse(event));
 }
 
 async function fetchGoogleCalendarEvents(startDate: Date, endDate: Date) {
@@ -33,16 +33,19 @@ async function fetchGoogleCalendarEvents(startDate: Date, endDate: Date) {
     const calendar = google.calendar({ version: 'v3', auth });
 
     // Retrieve events from the calendar
-    const response = await calendar.events.list({
-        calendarId: process.env.CALENDAR_CURSOR_ID!,
-        orderBy: 'startTime',
-        singleEvents: true,
-        timeMin: startDate.toISOString(),
-        timeMax: endDate.toISOString(),
-        timeZone: 'Asia/Singapore',
-    }, {});
-    
-    return filterFields(response.data.items);;
+    const response = await calendar.events.list(
+        {
+            calendarId: process.env.CALENDAR_CURSOR_ID!,
+            orderBy: 'startTime',
+            singleEvents: true,
+            timeMin: startDate.toISOString(),
+            timeMax: endDate.toISOString(),
+            timeZone: 'Asia/Singapore',
+        },
+        {},
+    );
+
+    return filterFields(response.data.items);
 }
 
 module.exports = { fetchGoogleCalendarEvents };
