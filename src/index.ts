@@ -1,6 +1,6 @@
 require('dotenv').config();
-const { Client, IntentsBitField } = require('discord.js');
-const eventHandler = require('./handlers/eventHandler');
+import { Client, IntentsBitField } from 'discord.js';
+import eventHandler from './handlers/eventHandler';
 
 // Create a new client instance with the intents we need
 const client = new Client({
