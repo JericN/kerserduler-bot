@@ -9,7 +9,7 @@ function format(event) {
     return `${eventDate.padEnd(6)} - ${event.summary}`;
 }
 
-function generateSendOutputScript(sentEvents, failedEvents) {
+export function generateSendOutputScript(sentEvents, failedEvents) {
     const script = {
         sentEvents: '',
         failedEvents: '',
@@ -21,7 +21,6 @@ function generateSendOutputScript(sentEvents, failedEvents) {
     }
 
     if (failedEvents?.length > 0) {
-        console.log('hereeeeeXX', failedEvents);
         const failedScripts = failedEvents.map((events) => events.data.map((event) => format(event)).join('\n'));
         script.failedEvents = wrap(`[ Failed to Send Events ]\n${failedScripts.join('\n')}`);
     }
@@ -29,5 +28,3 @@ function generateSendOutputScript(sentEvents, failedEvents) {
     const output = script.sentEvents + script.failedEvents;
     return output ? output : wrap('[ No Events to Send ]');
 }
-
-module.exports = generateSendOutputScript;

@@ -3,7 +3,7 @@ const path = require('path');
 
 const { fetchActiveThreads, fetchActiveRoles, findMissingRoles, findMissingThreads } = require('../../utils/commands');
 const { generateSendWarningScript } = require('../../utils/scripts');
-const generateCommandScript = require('../../utils/scripts/command');
+const { generateCommandScript } = require('../../utils/scripts');
 
 function wrap(text) {
     return '```asciidoc\n' + text + '\n```';

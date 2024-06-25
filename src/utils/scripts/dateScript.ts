@@ -1,8 +1,8 @@
-function format(date) {
+function format(date: Date): string {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function generateDateScript({ start, end }) {
+export function generateDateScript({ start, end }: { start: Date; end: Date }) {
     // Format the start and end dates
     const startDate = format(start);
     const endDate = format(end);
@@ -13,5 +13,3 @@ function generateDateScript({ start, end }) {
     // Return the formatted script
     return '```' + script + '```';
 }
-
-module.exports = generateDateScript;

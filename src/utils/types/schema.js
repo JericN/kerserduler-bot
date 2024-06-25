@@ -1,4 +1,4 @@
-const { z } = require('zod');
+import { z } from 'zod';
 
 const PartialCalendarEvent = z.object({
     id: z.string(),
@@ -48,4 +48,4 @@ const TransformEvents = PartialCalendarEvents.transform((events) => {
     });
 });
 
-module.exports = { TransformEvents, AcadEvents, ListOptions, SendOptions };
+export default { TransformEvents, AcadEvents, ListOptions, SendOptions };

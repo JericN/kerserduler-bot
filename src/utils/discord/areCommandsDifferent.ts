@@ -34,4 +34,3 @@ export function areCommandsDifferent(existingCommand, localCommand) {
 
     return false;
 }
-

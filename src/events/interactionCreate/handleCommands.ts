@@ -32,6 +32,9 @@ module.exports = async (client: Client, interaction: CommandInteraction) => {
         console.log(`🚀 Running command "${commandObject.name}"`);
         await commandObject.callback(client, interaction);
     } catch (error) {
-        console.log(`🆘 Error in running ${commandObject.name}: ${error}`);
+        await interaction.editReply({
+            content: `There was an error while executing **${commandObject.name}**!`,
+        });
+        console.log(`🆘 Error in running ${commandObject.name}.\n${error}`);
     }
 };

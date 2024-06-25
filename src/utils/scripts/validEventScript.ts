@@ -1,11 +1,12 @@
-const { formatDate } = require('../functions');
+import { AcadEvent, GroupedEvents } from '../types/types';
+import { formatDate } from '../functions';
 
-function format(event) {
-    const eventDate = formatDate(new Date(event.start.date));
+function format(event: AcadEvent) {
+    const eventDate = formatDate(new Date(event.startDate));
     return `${eventDate.padEnd(6)} - ${event.summary}`;
 }
 
-function makeEventListScript(groups) {
+export function generateValidEventScript(groups: GroupedEvents): string {
     // Format the events into a script
     let script = Object.values(groups)
         .map((group) => group.map((event) => format(event)).join('\n'))
@@ -18,5 +19,3 @@ function makeEventListScript(groups) {
     // Return the formatted script
     return '```asciidoc\n' + script + '\n```';
 }
-
-module.exports = makeEventListScript;

@@ -59,10 +59,10 @@ const commandOptions = [
     },
     {
         name: 'subjects',
-        description: 'Subject(s) to query, example input: "21 33 132"',
+        description: 'Subject(s) to query, example input: "cs21 cs33 cs132"',
         type: ApplicationCommandOptionType.String,
         required: false,
-        default: null,
+        default: '',
     },
 ];
 

@@ -1,11 +1,12 @@
-const { formatDate } = require('../functions');
+import { formatDate } from '../functions';
+import { AcadEvent } from '../types/types';
 
-function formatScript(event) {
-    const eventDate = formatDate(new Date(event.start.date));
+function formatScript(event: AcadEvent) {
+    const eventDate = formatDate(new Date(event.startDate));
     return `${eventDate.padEnd(6)} - ${event.summary}`;
 }
 
-function generateInvalidEventScript(events) {
+export function generateInvalidEventScript(events: AcadEvent[]): string {
     // Format the events into a script
     let script = events.map((event) => formatScript(event)).join('\n');
 
@@ -16,5 +17,3 @@ function generateInvalidEventScript(events) {
     // Return the formatted script
     return '```asciidoc\n' + script + '\n```';
 }
-
-module.exports = generateInvalidEventScript;

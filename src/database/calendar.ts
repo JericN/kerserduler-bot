@@ -22,10 +22,11 @@ function filterFields(data: calendar_v3.Schema$Event[] | undefined): AcadEvent[]
         };
     });
 
-    return res.map((event) => AcadEvent.parse(event));
+    return res.map((event) => AcadEvent.parse(event)) as AcadEvent[];
 }
 
-async function fetchGoogleCalendarEvents(startDate: Date, endDate: Date) {
+export async function fetchGoogleCalendarEvents(startDate: Date, endDate: Date): Promise<AcadEvent[]> {
+    // REMOVE: For testing purposes
     startDate.setDate(startDate.getDate() - 30);
     endDate.setDate(endDate.getDate() - 30);
 
@@ -47,5 +48,3 @@ async function fetchGoogleCalendarEvents(startDate: Date, endDate: Date) {
 
     return filterFields(response.data.items);
 }
-
-module.exports = { fetchGoogleCalendarEvents };
