@@ -4,8 +4,9 @@
     "description": "Discord bot for deadline management",
     "main": "src/index.js",
     "scripts": {
-        "dev": "pnpm node ./src/index.js",
-        "livedev": "pnpm nodemon",
+        "dev": "tsx watch src/index.ts",
+        "start": "pnpm nodemon",
+        "build": "tsup src/index.ts --minify",
         "test": "pnpm node ./tools/test.js",
         "lint": "pnpm eslint ./src",
         "format": "pnpm prettier --write ./src",
@@ -29,6 +30,9 @@
         "globals": "^15.6.0",
         "nodemon": "^3.1.4",
         "prettier": "^3.3.2",
+        "tsup": "^8.1.0",
+        "tsx": "^4.15.7",
+        "typescript": "^5.5.2",
         "zod": "^3.23.8"
     }
 }
