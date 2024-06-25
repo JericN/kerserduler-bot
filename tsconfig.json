@@ -12,6 +12,6 @@
       "strictNullChecks": true,
       "skipLibCheck": true
     },
-    "include": ["src/**/*.ts", "src/events/ready/01-registerCOmmands.ts"],
+    "include": ["src/**/*.ts"],
     "exclude": ["node_modules"]
   }
