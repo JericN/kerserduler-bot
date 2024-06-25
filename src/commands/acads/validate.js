@@ -15,7 +15,7 @@ const subjectList = fs
     .filter((subject) => subject.length > 0);
 
 // Asynchronously handles the execution of a command interaction
-async function handleCommandExecution(_, interaction) {
+async function commandCallback(_, interaction) {
     // Defer replying to let the user know that the bot has received the interaction
     await interaction.deferReply();
 
@@ -50,5 +50,5 @@ module.exports = {
     name: 'validate',
     description: 'validate the server if it has all the necessary channels and roles for sending acads requirements',
     options: [],
-    callback: handleCommandExecution,
+    callback: commandCallback,
 };

@@ -1,6 +1,6 @@
 const { google } = require('googleapis');
 const path = require('path');
-const { TransformEvents } = require('../utils/schema/types');
+const { TransformEvents } = require('../utils/types/schema');
 
 // FIXME: secure the keyFile
 function getAuth() {

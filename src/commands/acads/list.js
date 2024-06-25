@@ -9,7 +9,7 @@ const {
     generateValidEventScript,
 } = require('../../utils/scripts');
 
-const { ListOptions } = require('../../utils/schema/types');
+const { ListOptions } = require('../../utils/types/schema');
 
 // Slash command options
 const commandOptions = [

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { AcadEvents } = require('../schema/types');
+const { AcadEvents } = require('../types/schema');
 
 const listOfSubjects = fs
     .readFileSync(path.join(__dirname, '..', '..', 'data', 'subjects.txt'), 'utf-8')

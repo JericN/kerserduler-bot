@@ -67,7 +67,7 @@ const commandOptions = [
 ];
 
 // Asynchronously handles the execution of a command interaction
-async function handleCommandExecution(_, interaction) {
+async function commandCallback(_, interaction) {
     // Defer replying to let the user know that the bot has received the interaction
     await interaction.deferReply();
 
@@ -151,5 +151,5 @@ module.exports = {
     name: 'send',
     description: 'send list of requirements to their respective channels',
     options: commandOptions,
-    callback: handleCommandExecution,
+    callback: commandCallback,
 };
