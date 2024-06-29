@@ -1,6 +1,6 @@
 import { AcadEvent, DiscordEvent } from '../types/types';
 import { Role, ThreadChannel } from 'discord.js';
-import { formatDate } from '../functions';
+import { formatDate } from '../textFormat';
 import fs from 'fs';
 import path from 'path';
 

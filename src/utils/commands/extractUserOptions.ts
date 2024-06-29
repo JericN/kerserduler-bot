@@ -16,12 +16,12 @@ function formatValue(option: CommandOption, inputValue: RawValue): FormatValue {
     let value: RawValue | string[];
 
     if (option.name === 'subjects') {
-        assert(typeof inputValue === 'string');
+        assert(typeof inputValue === 'string', 'Subjects must be a string');
         name = inputValue || 'All';
         value = inputValue.split(' ').filter((s) => s.toLowerCase());
     } else {
         const choice = option.choices?.find((c) => c.value === inputValue);
-        assertDefined(choice);
+        assertDefined(choice, `Invalid choice for option ${option.name}`);
         ({ name } = choice);
         value = inputValue;
     }

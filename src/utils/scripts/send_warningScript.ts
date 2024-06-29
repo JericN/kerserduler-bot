@@ -1,6 +1,4 @@
-function wrap(text: string) {
-    return '```asciidoc\n' + text + '\n```';
-}
+import { toRed, wrap } from '../discordColor';
 
 export function generateSendWarningScript(invalidEvents: string[], missingThreads: string[], missingRoles: string[]) {
     const script = {
@@ -8,14 +6,17 @@ export function generateSendWarningScript(invalidEvents: string[], missingThread
         missingThreads: '',
         missingRoles: '',
     };
+
     if (invalidEvents.length > 0) {
-        script.invalidEvents = wrap(`[ Invalid Events Found ]\n${invalidEvents.join('\n')}`);
+        script.invalidEvents = wrap(`${toRed('Invalid Events Found!', 'b')}\n- ${invalidEvents.join('\n- ')}`);
     }
+
     if (missingThreads.length > 0) {
-        script.missingThreads = wrap(`[ Missing Threads Found ]\n${missingThreads.join('\n')}`);
+        script.missingThreads = wrap(`${toRed('Missing Threads Found!', 'b')}\n- ${missingThreads.join('\n- ')}`);
     }
+
     if (missingRoles.length > 0) {
-        script.missingRoles = wrap(`[ Missing Roles Found ]\n${missingRoles.join('\n')}`);
+        script.missingRoles = wrap(`${toRed('Missing Roles Found!', 'b')}\n- ${missingRoles.join('\n- ')}`);
     }
 
     return script.invalidEvents + script.missingThreads + script.missingRoles;

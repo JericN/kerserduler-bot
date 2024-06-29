@@ -1,21 +1,18 @@
-import { AcadEvent, GroupedEvents } from '../types/types';
-import { formatDate } from '../functions';
+import { toBlue, toRed, wrap } from '../discordColor';
+import { GroupedEvents } from '../types/types';
+import { listAcadEvents } from '../textFormat';
 
-function format(event: AcadEvent) {
-    const eventDate = formatDate(new Date(event.startDate));
-    return `${eventDate.padEnd(6)} - ${event.summary}`;
-}
-
-export function generateValidEventScript(groups: GroupedEvents): string {
+export function generateValidEventScript(validGroups: GroupedEvents): string {
     // Format the events into a script
-    let script = Object.values(groups)
-        .map((group) => group.map((event) => format(event)).join('\n'))
+    const eventScript = Object.values(validGroups)
+        .map((events) => listAcadEvents(events))
         .join('\n');
 
     // Add a header to the script
-    if (script.length) script = `[ Valid Events Found ]\n${script}`;
-    else script = '[ No Valid Event Found ]';
+    const script = eventScript.length
+        ? `${toBlue('List of Valid Events', 'b')}\n${eventScript}`
+        : toRed('No Valid Event Found.', 'b');
 
     // Return the formatted script
-    return '```asciidoc\n' + script + '\n```';
+    return wrap(script);
 }

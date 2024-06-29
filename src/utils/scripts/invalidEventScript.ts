@@ -1,19 +1,16 @@
+import { toBlue, toRed, wrap } from '../discordColor';
 import { AcadEvent } from '../types/types';
-import { formatDate } from '../functions';
+import { listAcadEvents } from '../textFormat';
 
-function formatScript(event: AcadEvent) {
-    const eventDate = formatDate(new Date(event.startDate));
-    return `${eventDate.padEnd(6)} - ${event.summary}`;
-}
-
-export function generateInvalidEventScript(events: AcadEvent[]): string {
+export function generateInvalidEventScript(invalidEvents: AcadEvent[]): string {
     // Format the events into a script
-    let script = events.map((event) => formatScript(event)).join('\n');
+    const eventScript = listAcadEvents(invalidEvents);
 
     // Add a header to the script
-    if (script.length) script = `[ Invalid Events Found ]\n${script}`;
-    else script = '[ No Invalid Event Found ]';
+    const script = eventScript.length
+        ? `${toRed('List of Invalid Events', 'b')} \n${eventScript}`
+        : toBlue('No Invalid Event Found.', 'b');
 
     // Return the formatted script
-    return '```asciidoc\n' + script + '\n```';
+    return wrap(script);
 }

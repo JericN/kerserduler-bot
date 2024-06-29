@@ -1,12 +1,13 @@
+import { toCyan, wrap } from '../discordColor';
+
 export function generateCommandScript<T extends object>(commandName: string, userOptions: T): string {
     // Generate the command script
-    let optionScript = Object.entries(userOptions)
-        .map(([name, value]) => `[${name}] ${value.name}`)
+    const optionScript = Object.entries(userOptions)
+        .map(([name, value]) => `${name}: ${toCyan(value.name, 'u')}`)
         .join(', ');
 
-    if (optionScript.length === 0) optionScript = 'None';
-    const script = `[Command] ${commandName} : ${optionScript}`;
+    const script = `Command: ${toCyan(commandName, 'u')}, ${optionScript}`;
 
     // Return the formatted script
-    return '```' + script + '```';
+    return wrap(script);
 }

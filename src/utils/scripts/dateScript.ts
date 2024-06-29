@@ -1,15 +1,14 @@
-function format(date: Date): string {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
+import { toCyan, wrap } from '../discordColor';
+import { formatDate } from '../textFormat';
 
 export function generateDateScript({ start, end }: { start: Date; end: Date }) {
     // Format the start and end dates
-    const startDate = format(start);
-    const endDate = format(end);
+    const startDate = formatDate(start);
+    const endDate = formatDate(end);
 
     // Generate the script
-    const script = `Searching events from [${startDate}] to [${endDate}]`;
+    const script = `Searching events from ${toCyan(startDate, 'b')} to ${toCyan(endDate, 'b')}.`;
 
     // Return the formatted script
-    return '```' + script + '```';
+    return wrap(script);
 }

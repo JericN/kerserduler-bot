@@ -85,7 +85,6 @@ async function commandCallback(client: Client, interaction: CommandInteraction) 
     // Send the response script as a reply
     const responseScript = `${commandScript}${dateScript}${validScript}${invalidScript}`;
     await interaction.editReply(responseScript);
-    console.log('✅ Command Execution Completed');
 }
 
 module.exports = {
