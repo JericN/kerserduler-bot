@@ -1,7 +1,7 @@
-import path from 'path';
-import { assert } from '../utils/assert';
 import { type Client } from 'discord.js';
+import { assert } from '../utils/assert';
 import { getDirectoryContent } from '../utils/discord';
+import path from 'path';
 
 export default function eventHandler(client: Client) {
     const eventFolders = getDirectoryContent(path.join(__dirname, '..', 'events'), true);
@@ -15,6 +15,7 @@ export default function eventHandler(client: Client) {
 
         client.on(eventName, async (args) => {
             for (const eventFile of eventFiles) {
+                // eslint-disable-next-line @typescript-eslint/no-var-requires
                 const eventFunction = require(path.resolve(eventFile));
                 await eventFunction(client, args);
             }

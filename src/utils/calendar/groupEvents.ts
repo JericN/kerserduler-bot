@@ -20,7 +20,7 @@ function groupBySubject(events: AcadEvent[]): GroupedEvents {
 }
 
 function groupByDate(events: AcadEvent[]): GroupedEvents {
-    const groupedEvents: { [key: string]: AcadEvent[] } = {};
+    const groupedEvents: GroupedEvents = {};
 
     // Group events by date
     events.forEach((event) => {

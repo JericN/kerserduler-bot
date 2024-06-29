@@ -1,5 +1,5 @@
 import type { APIApplicationCommandOption, ApplicationCommand, Client } from 'discord.js';
-import { areCommandsDifferent, getLocalCommands, getClientCommands } from '../../utils/discord';
+import { areCommandsDifferent, getClientCommands, getLocalCommands } from '../../utils/discord';
 import { type LocalCommand } from '../../utils/types/types';
 
 function handleExistingCommand(existingCommand: ApplicationCommand, localCommand: LocalCommand) {

@@ -4,7 +4,7 @@ export function assert(condition: any, msg = 'assertion failed'): asserts condit
 }
 
 export function assertDefined<T>(value: T | undefined, msg = 'value is not defined'): asserts value is T {
-    if (typeof value === undefined) {
+    if (typeof value === 'undefined') {
         throw new Error(msg);
     }
 }

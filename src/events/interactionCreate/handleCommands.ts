@@ -1,6 +1,6 @@
-import { devs, devServers } from '../../../config.json';
-import { getLocalCommands } from '../../utils/discord';
 import type { Client, CommandInteraction } from 'discord.js';
+import { devServers, devs } from '../../../config.json';
+import { getLocalCommands } from '../../utils/discord';
 
 module.exports = async (client: Client, interaction: CommandInteraction) => {
     if (!interaction.isCommand()) return;

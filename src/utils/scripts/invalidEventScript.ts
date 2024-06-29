@@ -1,5 +1,5 @@
-import { formatDate } from '../functions';
 import { AcadEvent } from '../types/types';
+import { formatDate } from '../functions';
 
 function formatScript(event: AcadEvent) {
     const eventDate = formatDate(new Date(event.startDate));

@@ -1,6 +1,6 @@
-import { google, calendar_v3 } from 'googleapis';
-import path from 'path';
+import { calendar_v3, google } from 'googleapis';
 import { AcadEvent } from '../utils/types/types';
+import path from 'path';
 
 // FIXME: secure the keyFile
 function getAuth() {

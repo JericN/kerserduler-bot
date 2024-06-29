@@ -1,6 +1,6 @@
+import { AcadEvent, FilteredEvents } from '../types/types';
 import fs from 'fs';
 import path from 'path';
-import { AcadEvent, FilteredEvents } from '../types/types';
 
 const listOfSubjects = fs
     .readFileSync(path.join(__dirname, '..', '..', 'data', 'subjects.txt'), 'utf-8')

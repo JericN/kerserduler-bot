@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 require('dotenv').config();
 import { Client, IntentsBitField } from 'discord.js';
 import eventHandler from './handlers/eventHandler';
