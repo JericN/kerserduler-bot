@@ -21,6 +21,16 @@ export const AcadEvent = z.object({
 });
 export type AcadEvent = z.infer<typeof AcadEvent>;
 
+export const DiscordEvent = z.object({
+    events: z.array(AcadEvent),
+    text: z.string(),
+    id: z.string(),
+    threadId: z.string(),
+    guildId: z.string(),
+});
+
+export type DiscordEvent = z.infer<typeof DiscordEvent>;
+
 export const FilteredEvents = z.object({
     validEvents: z.array(AcadEvent),
     invalidEvents: z.array(AcadEvent),
@@ -29,6 +39,19 @@ export type FilteredEvents = z.infer<typeof FilteredEvents>;
 
 export const GroupedEvents = z.record(z.array(AcadEvent));
 export type GroupedEvents = z.infer<typeof GroupedEvents>;
+
+const PossibleValues = z.union([z.string(), z.number(), z.boolean()]);
+
+export const CommandOption = z.object({
+    name: z.string(),
+    description: z.string(),
+    type: z.number(),
+    required: z.boolean(),
+    choices: z.array(z.object({ name: z.string(), value: PossibleValues })).optional(),
+    default: PossibleValues,
+});
+
+export type CommandOption = z.infer<typeof CommandOption>;
 
 export const ListOptions = z.object({
     span: z.object({
@@ -46,15 +69,22 @@ export const ListOptions = z.object({
 });
 export type ListOptions = z.infer<typeof ListOptions>;
 
-const PossibleValues = z.union([z.string(), z.number(), z.boolean()]);
-
-export const CommandOption = z.object({
-    name: z.string(),
-    description: z.string(),
-    type: z.number(),
-    required: z.boolean(),
-    choices: z.array(z.object({ name: z.string(), value: PossibleValues })),
-    default: PossibleValues,
+export const SendOptions = z.object({
+    span: z.object({
+        name: z.string(),
+        value: z.number(),
+    }),
+    start: z.object({
+        name: z.string(),
+        value: z.string(),
+    }),
+    force: z.object({
+        name: z.string(),
+        value: z.number(),
+    }),
+    subjects: z.object({
+        name: z.string(),
+        value: z.array(z.string()),
+    }),
 });
-
-export type CommandOption = z.infer<typeof CommandOption>;
+export type SendOptions = z.infer<typeof SendOptions>;
