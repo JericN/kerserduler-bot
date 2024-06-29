@@ -1,11 +1,10 @@
-const fs = require('fs');
-const path = require('path');
+import { Client, CommandInteraction } from 'discord.js';
+import { fetchActiveRoles, fetchActiveThreads, findMissingRoles, findMissingThreads } from '../../utils/commands';
+import { generateCommandScript, generateSendWarningScript } from '../../utils/scripts';
+import fs from 'fs';
+import path from 'path';
 
-const { fetchActiveThreads, fetchActiveRoles, findMissingRoles, findMissingThreads } = require('../../utils/commands');
-const { generateSendWarningScript } = require('../../utils/scripts');
-const { generateCommandScript } = require('../../utils/scripts');
-
-function wrap(text) {
+function wrap(text: string) {
     return '```asciidoc\n' + text + '\n```';
 }
 
@@ -15,12 +14,12 @@ const subjectList = fs
     .filter((subject) => subject.length > 0);
 
 // Asynchronously handles the execution of a command interaction
-async function commandCallback(_, interaction) {
+async function commandCallback(_: Client, interaction: CommandInteraction) {
     // Defer replying to let the user know that the bot has received the interaction
     await interaction.deferReply();
 
     // Fetch and verify the existence of threads
-    const activeThreads = fetchActiveThreads('acads', interaction);
+    const activeThreads = await fetchActiveThreads('acads', interaction);
     const missingThreads = findMissingThreads(activeThreads, subjectList);
 
     // Fetch and verify the existence of roles
@@ -28,7 +27,7 @@ async function commandCallback(_, interaction) {
     const missingRoles = findMissingRoles(activeRoles, subjectList);
 
     // Generate the command script and date script
-    const commandScript = generateCommandScript('validate', [], []);
+    const commandScript = generateCommandScript('validate', {});
     const warningScript = generateSendWarningScript([], missingThreads, missingRoles);
 
     // Display valid subjects if no warnings
@@ -46,7 +45,6 @@ module.exports = {
     deleted: false,
     devOnly: true,
     allowedServerOnly: true,
-    devServerOnly: true,
     name: 'validate',
     description: 'validate the server if it has all the necessary channels and roles for sending acads requirements',
     options: [],
