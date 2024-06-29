@@ -1,8 +1,8 @@
-function wrap(text) {
+function wrap(text: string) {
     return '```asciidoc\n' + text + '\n```';
 }
 
-function generateSendWarningScript(invalidEvents, missingThreads, missingRoles) {
+export function generateSendWarningScript(invalidEvents: string[], missingThreads: string[], missingRoles: string[]) {
     const script = {
         invalidEvents: '',
         missingThreads: '',
@@ -18,8 +18,5 @@ function generateSendWarningScript(invalidEvents, missingThreads, missingRoles) 
         script.missingRoles = wrap(`[ Missing Roles Found ]\n${missingRoles.join('\n')}`);
     }
 
-    const warningScript = script.invalidEvents + script.missingThreads + script.missingRoles;
-    return warningScript;
+    return script.invalidEvents + script.missingThreads + script.missingRoles;
 }
-
-module.exports = generateSendWarningScript;

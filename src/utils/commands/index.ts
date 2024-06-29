@@ -8,4 +8,3 @@ export { findMissingRoles } from './findMissingRoles';
 export { findMissingThreads } from './findMissingThreads';
 export { sendEventsToChannels } from './sendEventsToChannels';
 export { validateInputSubjects } from './validateInputSubjects';
-export { validateInputSubjects as default } from './validateInputSubjects';

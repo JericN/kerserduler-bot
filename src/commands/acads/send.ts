@@ -1,26 +1,28 @@
-const { ApplicationCommandOptionType } = require('discord.js');
-const { fetchGoogleCalendarEvents } = require('../../database/calendar');
-const { filterEvents, groupEvents } = require('../../utils/calendar');
-const {
-    generateCommandScript,
-    generateDateScript,
-    generateSendOutputScript,
-    generateSendWarningScript,
-} = require('../../utils/scripts');
-const {
+import { ApplicationCommandOptionType, type Client, type CommandInteraction } from 'discord.js';
+import {
     applySubjectFilter,
     calculateSearchInterval,
     extractUserOptions,
-    fetchActiveThreads,
     fetchActiveRoles,
+    fetchActiveThreads,
     filterSendableEvents,
     findMissingRoles,
     findMissingThreads,
     sendEventsToChannels,
     validateInputSubjects,
-} = require('../../utils/commands');
+} from '../../utils/commands';
+import { filterEvents, groupEvents } from '../../utils/calendar';
+import {
+    generateCommandScript,
+    generateDateScript,
+    generateSendOutputScript,
+    generateSendWarningScript,
+} from '../../utils/scripts';
 
-// Slash command options
+import { fetchGoogleCalendarEvents } from '../../database/calendar';
+
+import type { CommandOption, SendOptions } from '../../utils/types/types';
+
 const commandOptions = [
     {
         name: 'span',
@@ -64,21 +66,21 @@ const commandOptions = [
         required: false,
         default: '',
     },
-];
+] as CommandOption[];
 
 // Asynchronously handles the execution of a command interaction
-async function commandCallback(_, interaction) {
+async function commandCallback(client: Client, interaction: CommandInteraction) {
     // Defer replying to let the user know that the bot has received the interaction
     await interaction.deferReply();
 
     // Extract user options from the interaction
-    const userOptions = extractUserOptions(interaction, commandOptions);
+    const userOptions = extractUserOptions<SendOptions>(interaction, commandOptions);
 
     // Determine the search interval based on the user-provided options
-    const searchInterval = calculateSearchInterval(userOptions.span, userOptions.start);
+    const searchInterval = calculateSearchInterval(userOptions.span.value, userOptions.start.value);
 
     // Validate the user input subjects
-    const invalidSubjects = validateInputSubjects(userOptions.subjects);
+    const invalidSubjects = validateInputSubjects(userOptions.subjects.value);
     if (invalidSubjects.length) {
         await interaction.editReply(`[ERROR] Invalid Input (subjects) : ${invalidSubjects.join(', ')}`);
         return;
@@ -97,12 +99,12 @@ async function commandCallback(_, interaction) {
     const { validEvents, invalidEvents } = filterEvents(fetchedEvents);
 
     // Apply subject filter to valid events
-    const filteredValidEvents = applySubjectFilter(validEvents, userOptions.subjects);
+    const filteredValidEvents = applySubjectFilter(validEvents, userOptions.subjects.value);
     const validEventSubjects = [...new Set(filteredValidEvents.map((event) => event.subject))];
     const invalidEventSummaries = invalidEvents.map((event) => event.summary);
 
     // Fetch and verify the existence of threads
-    const activeThreads = fetchActiveThreads('acads', interaction);
+    const activeThreads = await fetchActiveThreads('acads', interaction);
     const missingThreads = findMissingThreads(activeThreads, validEventSubjects);
 
     // Fetch and verify the existence of roles
@@ -110,12 +112,12 @@ async function commandCallback(_, interaction) {
     const missingRoles = findMissingRoles(activeRoles, validEventSubjects);
 
     // Generate the command script and date script
-    const commandScript = generateCommandScript('send', userOptions, commandOptions);
+    const commandScript = generateCommandScript('send', userOptions);
     const dateScript = generateDateScript(searchInterval);
 
     // End the program if force is not enabled and there are warnings
     const warningFlag = invalidEvents.length || missingThreads.length || missingRoles.length;
-    if (!userOptions.force && warningFlag) {
+    if (!userOptions.force.value && warningFlag) {
         const warningScript = generateSendWarningScript(invalidEventSummaries, missingThreads, missingRoles);
         await interaction.editReply(commandScript + dateScript + warningScript);
         return;
@@ -149,7 +151,7 @@ module.exports = {
     allowedServerOnly: true,
     devServerOnly: true,
     name: 'send',
-    description: 'send list of requirements to their respective channels',
+    description: 'send list of requirements to their respective threads',
     options: commandOptions,
     callback: commandCallback,
 };

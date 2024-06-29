@@ -1,41 +1,42 @@
+import { assert, assertDefined } from '../assert';
 import type { CommandInteraction } from 'discord.js';
 import { CommandOption } from '../types/types';
-import { assertDefined, assertType } from '../assert';
 
-type PossibleValues = string | number | boolean | string[];
+type RawValue = string | number | boolean;
 
-type FormattedOption = {
+type FormatValue = {
     name: string;
-    value: PossibleValues;
+    value: RawValue | string[];
 };
 
-function formatOptionValue(option: CommandOption, value: PossibleValues): FormattedOption {
-    switch (option.name) {
-        case 'subjects':
-            assertType<string>(value, 'string');
-            return {
-                name: value || 'All',
-                value: value.split(' ').map((s) => s.toLowerCase()),
-            };
+type UserOptions = Record<string, FormatValue>;
 
-        default:
-            const choice = option.choices.find((c) => c.value === value);
-            assertDefined(choice);
-            return {
-                name: choice.name,
-                value: value,
-            };
+function formatValue(option: CommandOption, inputValue: RawValue): FormatValue {
+    let name: string;
+    let value: RawValue | string[];
+
+    if (option.name === 'subjects') {
+        assert(typeof inputValue === 'string');
+        name = inputValue || 'All';
+        value = inputValue.split(' ').filter((s) => s.toLowerCase());
+    } else {
+        const choice = option.choices?.find((c) => c.value === inputValue);
+        assertDefined(choice);
+        ({ name } = choice);
+        value = inputValue;
     }
+
+    return { name, value };
 }
 
 export function extractUserOptions<T>(interaction: CommandInteraction, options: CommandOption[]): T {
-    const result: Record<string, FormattedOption> = {};
-    const userInput = interaction.options;
+    const userOptions: UserOptions = {};
 
     for (const option of options) {
-        const optionValue = userInput.get(option.name)?.value ?? option.default;
-        result[option.name] = formatOptionValue(option, optionValue);
+        const inputValue = interaction.options.get(option.name)?.value ?? option.default;
+        assertDefined(inputValue, `Option ${option.name} is undefined`);
+        userOptions[option.name] = formatValue(option, inputValue);
     }
 
-    return result as T;
+    return userOptions as T;
 }

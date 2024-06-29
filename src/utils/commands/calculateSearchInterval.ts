@@ -1,5 +1,3 @@
-type DateSpan = { start: Date; end: Date };
-
 function getMonday(): Date {
     const today = new Date();
     const firstDay = today.getDate() - today.getDay() + 1;
@@ -12,7 +10,7 @@ function addDaysToDate(date: Date, days: number): Date {
     return newDate;
 }
 
-export function calculateSearchInterval(span: number, align: string): DateSpan {
+export function calculateSearchInterval(span: number, align: string): { start: Date; end: Date } {
     const start = align === 'monday' ? getMonday() : new Date();
     const end = addDaysToDate(start, span * 7 - 1);
     start.setHours(0, 0, 0, 0);
