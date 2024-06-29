@@ -4,7 +4,6 @@ export const LocalCommand = z.object({
     deleted: z.boolean(),
     devOnly: z.boolean(),
     allowedServerOnly: z.boolean(),
-    devServerOnly: z.boolean(),
     name: z.string(),
     description: z.string(),
     options: z.array(z.unknown()),

@@ -18,7 +18,7 @@ module.exports = async (client: Client, interaction: CommandInteraction) => {
         return;
     }
 
-    if (commandObject.devServerOnly && interaction.guild && !devServers.includes(interaction.guild.id)) {
+    if (interaction.guild && !devServers.includes(interaction.guild.id)) {
         await interaction.reply({
             content: 'This command is only available in the development server.',
             ephemeral: true,

@@ -1,4 +1,5 @@
 import { ApplicationCommandOptionType, type Client, type CommandInteraction } from 'discord.js';
+import type { CommandOption, SendOptions } from '../../utils/types/types';
 import {
     applySubjectFilter,
     calculateSearchInterval,
@@ -18,10 +19,7 @@ import {
     generateSendOutputScript,
     generateSendWarningScript,
 } from '../../utils/scripts';
-
 import { fetchGoogleCalendarEvents } from '../../database/calendar';
-
-import type { CommandOption, SendOptions } from '../../utils/types/types';
 
 const commandOptions = [
     {
@@ -149,7 +147,6 @@ module.exports = {
     deleted: false,
     devOnly: true,
     allowedServerOnly: true,
-    devServerOnly: true,
     name: 'send',
     description: 'send list of requirements to their respective threads',
     options: commandOptions,

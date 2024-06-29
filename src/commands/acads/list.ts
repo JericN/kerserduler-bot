@@ -92,7 +92,6 @@ module.exports = {
     deleted: false,
     devOnly: true,
     allowedServerOnly: true,
-    devServerOnly: true,
     name: 'list',
     description: 'List events from google calendar.',
     options: commandOptions,
