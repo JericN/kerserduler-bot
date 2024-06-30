@@ -134,6 +134,9 @@ async function commandCallback(client: Client, interaction: CommandInteraction) 
     const outputScript = generateSendOutputScript(successfulEvents, failedEvents);
     const responseScript = commandScript + dateScript + outputScript;
 
+    // Save logs
+    await saveSendLogs(successfulEvents);
+
     // Send the output script
     await interaction.editReply(responseScript);
 }
