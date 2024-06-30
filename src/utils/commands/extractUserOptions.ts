@@ -15,13 +15,14 @@ function formatValue(option: CommandOption, inputValue: RawValue): FormatValue {
     let name: string;
     let value: RawValue | string[];
 
+    // WARNING: Future implementation for other option should be handled here
     if (option.name === 'subjects') {
-        assert(typeof inputValue === 'string', 'Subjects must be a string');
+        assert(typeof inputValue === 'string', 'Subjects should be a string');
         name = inputValue || 'All';
         value = inputValue.split(' ').filter((s) => s.toLowerCase());
     } else {
         const choice = option.choices?.find((c) => c.value === inputValue);
-        assertDefined(choice, `Invalid choice for option ${option.name}`);
+        assertDefined(choice, `Undefined choice for option ${option.name}`);
         ({ name } = choice);
         value = inputValue;
     }
@@ -34,7 +35,7 @@ export function extractUserOptions<T>(interaction: CommandInteraction, options: 
 
     for (const option of options) {
         const inputValue = interaction.options.get(option.name)?.value ?? option.default;
-        assertDefined(inputValue, `Option ${option.name} is undefined`);
+        assertDefined(inputValue, `Undefined value for option ${option.name}`);
         userOptions[option.name] = formatValue(option, inputValue);
     }
 

@@ -8,15 +8,18 @@ export function generateSendWarningScript(invalidEvents: string[], missingThread
     };
 
     if (invalidEvents.length > 0) {
-        script.invalidEvents = wrap(`${toRed('Invalid Events Found!', 'b')}\n- ${invalidEvents.join('\n- ')}`);
+        const title = toRed('Invalid Events Found!', 'b');
+        script.invalidEvents = wrap(`${title}\n- ${invalidEvents.join('\n- ')}`);
     }
 
     if (missingThreads.length > 0) {
-        script.missingThreads = wrap(`${toRed('Missing Threads Found!', 'b')}\n- ${missingThreads.join('\n- ')}`);
+        const title = toRed('Missing Threads Found!', 'b');
+        script.missingThreads = wrap(`${title}\n- ${missingThreads.join('\n- ')}`);
     }
 
     if (missingRoles.length > 0) {
-        script.missingRoles = wrap(`${toRed('Missing Roles Found!', 'b')}\n- ${missingRoles.join('\n- ')}`);
+        const title = toRed('Missing Roles Found!', 'b');
+        script.missingRoles = wrap(`${title}\n- ${missingRoles.join('\n- ')}`);
     }
 
     return script.invalidEvents + script.missingThreads + script.missingRoles;

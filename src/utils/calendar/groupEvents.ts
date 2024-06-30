@@ -1,4 +1,5 @@
 import { AcadEvent, GroupedEvents } from '../types/types';
+import { formatDate } from '../commands/formatDate';
 
 function groupBySubject(events: AcadEvent[]): GroupedEvents {
     const groupedEvents: GroupedEvents = {};
@@ -24,7 +25,7 @@ function groupByDate(events: AcadEvent[]): GroupedEvents {
 
     // Group events by date
     events.forEach((event) => {
-        const date = event.startDate.toLocaleString('default', { month: 'short', day: 'numeric' });
+        const date = formatDate(event.startDate);
         if (!groupedEvents[date]) groupedEvents[date] = [];
         groupedEvents[date].push(event);
     });

@@ -9,6 +9,7 @@ import {
     filterSendableEvents,
     findMissingRoles,
     findMissingThreads,
+    saveSendLogs,
     sendEventsToChannels,
     validateInputSubjects,
 } from '../../utils/commands';
@@ -80,21 +81,15 @@ async function commandCallback(client: Client, interaction: CommandInteraction) 
     // Validate the user input subjects
     const invalidSubjects = validateInputSubjects(userOptions.subjects.value);
     if (invalidSubjects.length) {
-        await interaction.editReply(`[ERROR] Invalid Input (subjects) : ${invalidSubjects.join(', ')}`);
+        await interaction.editReply(`Invalid Input (subjects) : ${invalidSubjects.join(', ')}`);
         return;
     }
 
     // Fetch events from Google Calendar
-    let fetchedEvents;
-    try {
-        fetchedEvents = await fetchGoogleCalendarEvents(searchInterval.start, searchInterval.end);
-    } catch {
-        await interaction.editReply('[ERROR] Calendar Request Failed');
-        return;
-    }
+    const calendarEvents = await fetchGoogleCalendarEvents(searchInterval.start, searchInterval.end);
 
     // Separate valid and invalid events
-    const { validEvents, invalidEvents } = filterEvents(fetchedEvents);
+    const { validEvents, invalidEvents } = filterEvents(calendarEvents);
 
     // Apply subject filter to valid events
     const filteredValidEvents = applySubjectFilter(validEvents, userOptions.subjects.value);

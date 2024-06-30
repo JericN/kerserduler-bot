@@ -12,7 +12,7 @@ export const LocalCommand = z.object({
 export type LocalCommand = z.infer<typeof LocalCommand>;
 
 export const AcadEvent = z.object({
-    id: z.string(),
+    calendarId: z.string(),
     subject: z.string(),
     summary: z.string(),
     startDate: z.date(),
@@ -23,7 +23,7 @@ export type AcadEvent = z.infer<typeof AcadEvent>;
 export const DiscordEvent = z.object({
     events: z.array(AcadEvent),
     text: z.string(),
-    id: z.string(),
+    messageId: z.string(),
     threadId: z.string(),
     guildId: z.string(),
 });

@@ -1,5 +1,5 @@
-import { AcadEvent, CommandOption, ListOptions } from '../../utils/types/types';
 import { ApplicationCommandOptionType, type Client, type CommandInteraction } from 'discord.js';
+import { CommandOption, ListOptions } from '../../utils/types/types';
 import { calculateSearchInterval, extractUserOptions } from '../../utils/commands';
 import { filterEvents, groupEvents } from '../../utils/calendar';
 import {
@@ -61,14 +61,7 @@ async function commandCallback(client: Client, interaction: CommandInteraction) 
     const date = calculateSearchInterval(options.span.value, options.start.value);
 
     // Fetch events from Google Calendar
-    let calendarEvents: AcadEvent[];
-    try {
-        calendarEvents = await fetchGoogleCalendarEvents(date.start, date.end);
-    } catch (error) {
-        console.log(`🆘 Calendar Request Failed.\n${error}`);
-        await interaction.editReply('[ERROR] Calendar Request Failed');
-        return;
-    }
+    const calendarEvents = await fetchGoogleCalendarEvents(date.start, date.end);
 
     // Separate valid and invalid events
     const { validEvents, invalidEvents } = filterEvents(calendarEvents);

@@ -6,5 +6,6 @@ export { fetchActiveThreads } from './fetchActiveThreads';
 export { filterSendableEvents } from './filterSendableEvents';
 export { findMissingRoles } from './findMissingRoles';
 export { findMissingThreads } from './findMissingThreads';
+export { saveSendLogs } from './saveSendLogs';
 export { sendEventsToChannels } from './sendEventsToChannels';
 export { validateInputSubjects } from './validateInputSubjects';
