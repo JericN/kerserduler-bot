@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionType, type Client, type CommandInteraction } from 'discord.js';
-import { CommandOption, ListOptions } from '../../utils/types/types';
+import { CommandOption, ListOptions } from '../../utils/schema';
 import { calculateSearchInterval, extractUserOptions } from '../../utils/commands';
 import { filterEvents, groupEvents } from '../../utils/calendar';
 import {
@@ -82,10 +82,10 @@ async function commandCallback(client: Client, interaction: CommandInteraction) 
 
 module.exports = {
     deleted: false,
-    devOnly: true,
+    devOnly: false,
     allowedServerOnly: true,
     name: 'list',
-    description: 'List events from google calendar.',
+    description: 'List events from google calendar!',
     options: commandOptions,
     callback: commandCallback,
 };

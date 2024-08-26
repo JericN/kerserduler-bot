@@ -9,3 +9,5 @@ export { findMissingThreads } from './findMissingThreads';
 export { saveSendLogs } from './saveSendLogs';
 export { sendEventsToChannels } from './sendEventsToChannels';
 export { validateInputSubjects } from './validateInputSubjects';
+export { getMessageHistory } from './getMessageHistory';
+export { unsendEvents } from './unsendEvents';

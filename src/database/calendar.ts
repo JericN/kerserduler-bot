@@ -1,5 +1,5 @@
 import { calendar_v3, google } from 'googleapis';
-import { AcadEvent } from '../utils/types/types';
+import { AcadEvent } from '../utils/schema';
 import path from 'path';
 
 // FIXME: secure the keyFile
@@ -26,11 +26,6 @@ function parseData(data: calendar_v3.Schema$Event[] | undefined): AcadEvent[] {
 }
 
 export async function fetchGoogleCalendarEvents(startDate: Date, endDate: Date): Promise<AcadEvent[]> {
-    // REMOVE: For testing purposes
-    startDate.setDate(startDate.getDate() - 30);
-    endDate.setDate(endDate.getDate() - 30);
-    // ================================
-
     const auth = getAuth();
     const calendar = google.calendar({ version: 'v3', auth });
 

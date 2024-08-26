@@ -1,17 +1,17 @@
 {
     "compilerOptions": {
-      "target": "ES2021",
-      "module": "commonjs",
-      "rootDir": "./src",
-      "outDir": "./dist",
-      "removeComments": true,
-      "resolveJsonModule": true,
-      "esModuleInterop": true,
-      "forceConsistentCasingInFileNames": true,
-      "strict": true,
-      "strictNullChecks": true,
-      "skipLibCheck": true
+        "target": "ES2021",
+        "module": "commonjs",
+        "rootDir": "./src",
+        "outDir": "./dist",
+        "removeComments": true,
+        "resolveJsonModule": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "strictNullChecks": true,
+        "skipLibCheck": true
     },
-    "include": ["src/**/*.ts"],
+    "include": ["src/**/*.ts", "src/events/ready/02-online.js"],
     "exclude": ["node_modules"]
-  }
+}

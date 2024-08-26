@@ -1,6 +1,6 @@
 import { assert, assertDefined } from '../assert';
 import type { CommandInteraction } from 'discord.js';
-import { CommandOption } from '../types/types';
+import { CommandOption } from '../schema';
 
 type RawValue = string | number | boolean;
 
@@ -15,11 +15,15 @@ function formatValue(option: CommandOption, inputValue: RawValue): FormatValue {
     let name: string;
     let value: RawValue | string[];
 
-    // WARNING: Future implementation for other option should be handled here
+    // IMPORTANT: Future implementation for other option should be handled here
     if (option.name === 'subjects') {
         assert(typeof inputValue === 'string', 'Subjects should be a string');
         name = inputValue || 'All';
         value = inputValue.split(' ').filter((s) => s.toLowerCase());
+    } else if (option.name === 'steps') {
+        assert(typeof inputValue === 'number', 'Steps should be a number');
+        name = inputValue.toString();
+        value = inputValue;
     } else {
         const choice = option.choices?.find((c) => c.value === inputValue);
         assertDefined(choice, `Undefined choice for option ${option.name}`);

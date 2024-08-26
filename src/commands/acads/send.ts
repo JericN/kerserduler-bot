@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionType, type Client, type CommandInteraction } from 'discord.js';
-import type { CommandOption, SendOptions } from '../../utils/types/types';
+import type { CommandOption, SendOptions } from '../../utils/schema';
 import {
     applySubjectFilter,
     calculateSearchInterval,
@@ -21,6 +21,7 @@ import {
     generateSendWarningScript,
 } from '../../utils/scripts';
 import { fetchGoogleCalendarEvents } from '../../database/calendar';
+import { thread_channel } from '../../../config.json';
 
 const commandOptions = [
     {
@@ -97,7 +98,7 @@ async function commandCallback(client: Client, interaction: CommandInteraction) 
     const invalidEventSummaries = invalidEvents.map((event) => event.summary);
 
     // Fetch and verify the existence of threads
-    const activeThreads = await fetchActiveThreads('acads', interaction);
+    const activeThreads = await fetchActiveThreads(thread_channel, interaction);
     const missingThreads = findMissingThreads(activeThreads, validEventSubjects);
 
     // Fetch and verify the existence of roles
@@ -143,10 +144,10 @@ async function commandCallback(client: Client, interaction: CommandInteraction) 
 
 module.exports = {
     deleted: false,
-    devOnly: true,
+    devOnly: false,
     allowedServerOnly: true,
     name: 'send',
-    description: 'send list of requirements to their respective threads',
+    description: 'send list of requirements to their respective threads!',
     options: commandOptions,
     callback: commandCallback,
 };

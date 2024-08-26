@@ -1,4 +1,4 @@
-import { AcadEvent, DiscordEvent } from './types/types';
+import { AcadEvent, DiscordEvent } from './schema';
 
 function formatDate(date: Date): string {
     return date.toLocaleString('default', { month: 'short', day: 'numeric' });

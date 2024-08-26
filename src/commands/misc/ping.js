@@ -1,6 +1,6 @@
 module.exports = {
     deleted: false,
-    devOnly: true,
+    devOnly: false,
     allowedServerOnly: true,
 
     name: 'ping',

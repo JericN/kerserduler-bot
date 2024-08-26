@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+const dateTransformer = z.preprocess((arg) => {
+    if (typeof arg === 'string') {
+        return new Date(arg);
+    }
+    return arg;
+}, z.date());
+
+const PossibleValues = z.union([z.string(), z.number(), z.boolean()]);
+
 export const LocalCommand = z.object({
     deleted: z.boolean(),
     devOnly: z.boolean(),
@@ -39,7 +48,23 @@ export type FilteredEvents = z.infer<typeof FilteredEvents>;
 export const GroupedEvents = z.record(z.array(AcadEvent));
 export type GroupedEvents = z.infer<typeof GroupedEvents>;
 
-const PossibleValues = z.union([z.string(), z.number(), z.boolean()]);
+export const EventLog = z.object({
+    timestamp: dateTransformer,
+    subject: z.string(),
+    summary: z.string(),
+    calendarId: z.string(),
+    messageId: z.string(),
+    threadId: z.string(),
+    guildId: z.string(),
+});
+export type EventLog = z.infer<typeof EventLog>;
+
+export const EventHistory = z.object({
+    timestamp: dateTransformer,
+    messages: z.array(EventLog),
+});
+
+export type EventHistory = z.infer<typeof EventHistory>;
 
 export const CommandOption = z.object({
     name: z.string(),
@@ -49,7 +74,6 @@ export const CommandOption = z.object({
     choices: z.array(z.object({ name: z.string(), value: PossibleValues })).optional(),
     default: PossibleValues,
 });
-
 export type CommandOption = z.infer<typeof CommandOption>;
 
 export const ListOptions = z.object({
@@ -87,3 +111,15 @@ export const SendOptions = z.object({
     }),
 });
 export type SendOptions = z.infer<typeof SendOptions>;
+
+export const UnsendOptions = z.object({
+    steps: z.object({
+        name: z.string(),
+        value: z.number(),
+    }),
+    preview: z.object({
+        name: z.string(),
+        value: z.number(),
+    }),
+});
+export type UnsendOptions = z.infer<typeof UnsendOptions>;

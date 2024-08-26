@@ -34,7 +34,6 @@ export default [
             'no-alert': 'warn',
             'no-array-constructor': 'error',
             'no-caller': 'error',
-            'no-console': 'warn',
             'no-else-return': 'error',
             'no-empty-function': 'error',
             'no-empty-static-block': 'error',

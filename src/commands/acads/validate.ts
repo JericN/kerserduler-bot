@@ -1,8 +1,10 @@
+import fs from 'fs';
+import path from 'path';
+
 import { Client, CommandInteraction } from 'discord.js';
 import { fetchActiveRoles, fetchActiveThreads, findMissingRoles, findMissingThreads } from '../../utils/commands';
 import { generateCommandScript, generateSendWarningScript } from '../../utils/scripts';
-import fs from 'fs';
-import path from 'path';
+import { thread_channel } from '../../../config.json';
 
 function wrap(text: string) {
     return '```asciidoc\n' + text + '\n```';
@@ -19,7 +21,7 @@ async function commandCallback(_: Client, interaction: CommandInteraction) {
     await interaction.deferReply();
 
     // Fetch and verify the existence of threads
-    const activeThreads = await fetchActiveThreads('acads', interaction);
+    const activeThreads = await fetchActiveThreads(thread_channel, interaction);
     const missingThreads = findMissingThreads(activeThreads, subjectList);
 
     // Fetch and verify the existence of roles
@@ -43,10 +45,10 @@ async function commandCallback(_: Client, interaction: CommandInteraction) {
 
 module.exports = {
     deleted: false,
-    devOnly: true,
+    devOnly: false,
     allowedServerOnly: true,
     name: 'validate',
-    description: 'validate the server if it has all the necessary channels and roles for sending acads requirements',
+    description: 'validate the server if it has all the necessary channels and roles for sending acads requirements!',
     options: [],
     callback: commandCallback,
 };
